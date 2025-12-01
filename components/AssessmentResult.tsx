@@ -16,9 +16,19 @@ const ProbabilityBadge: React.FC<{ level: string }> = ({ level }) => {
 
   return (
     <span className={`text-xs font-bold px-3 py-1 rounded-full ${colorClass}`}>
-      Viabilidad: {level}
+      VIABILIDAD: {level.toUpperCase()}
     </span>
   );
+};
+
+const buildReference = (profile: UserProfile, title?: string) => {
+  const base = `${profile.firstName}|${profile.lastName}|${profile.nationality}|${title || ''}`.toUpperCase();
+  let hash = 0;
+  for (let i = 0; i < base.length; i++) {
+    hash = (hash * 31 + base.charCodeAt(i)) >>> 0;
+  }
+  const suffix = (hash % 90000 + 10000).toString().padStart(5, '0').slice(0, 5);
+  return `#${suffix}`;
 };
 
 export const AssessmentResult: React.FC<AssessmentResultProps> = ({ result, profile, onReset }) => {
@@ -26,6 +36,8 @@ export const AssessmentResult: React.FC<AssessmentResultProps> = ({ result, prof
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const refCode = buildReference(profile, result.recommendations[0]?.title);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,15 +65,26 @@ export const AssessmentResult: React.FC<AssessmentResultProps> = ({ result, prof
   const isScheduleAction = result.nextStepAction === NextStepAction.SCHEDULE_CONSULTATION;
 
   return (
-    <div className="max-w-4xl mx-auto animate-fade-in pb-20">
+    <div className="max-w-4xl mx-auto animate-fade-in pb-20 text-left">
       
       {/* Summary Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 md:p-10 mb-8 text-center relative overflow-hidden">
-         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-brand-600 to-brand-400"></div>
-         <h2 className="text-3xl md:text-4xl font-serif font-bold text-slate-900 mb-6 mt-2">Dictamen Preliminar</h2>
-         <div className="text-lg text-slate-600 leading-relaxed max-w-3xl mx-auto font-light">
-           {result.summary}
-         </div>
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 md:p-10 mb-10 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-slate-900"></div>
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
+          <div className="text-left">
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-slate-900">Dictamen Preliminar</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 mt-2">Informe de viabilidad jurídica</p>
+          </div>
+          <div className="text-right text-xs text-slate-500 font-semibold uppercase tracking-wide">
+            <span className="block text-slate-400">Ref. expediente</span>
+            <span className="text-slate-700">{refCode}</span>
+          </div>
+        </div>
+        <div className="border-t border-slate-200 pt-6">
+          <p className="text-lg leading-relaxed text-slate-700 font-light text-left">
+            {result.summary}
+          </p>
+        </div>
       </div>
 
       {/* Critical Advice */}
@@ -77,65 +100,71 @@ export const AssessmentResult: React.FC<AssessmentResultProps> = ({ result, prof
 
       {/* Recommendations Grid */}
       <div className="mb-12 px-2 md:px-0">
-        <h3 className="text-2xl font-serif font-bold text-slate-900 mb-6 border-b border-slate-200 pb-4">
-          Opciones Legales Detectadas
+        <h3 className="text-2xl font-serif font-bold text-slate-900 mb-6 border-b border-slate-200 pb-4 flex items-center gap-3">
+          <span className="inline-block h-[1px] w-6 bg-brand-500" />
+          Vías Legales Detectadas
         </h3>
         <div className="grid grid-cols-1 gap-8">
           {result.recommendations.map((rec, idx) => (
-            <div key={idx} className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 group">
+            <div
+              key={idx}
+              className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
+            >
               <div className="p-6 md:p-8">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   <div className="space-y-2">
                     <h4 className="font-serif font-bold text-2xl text-brand-800">
                       {rec.title}
                     </h4>
-                    <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-700 bg-brand-50 px-3 py-1 rounded-full border border-brand-100">
-                      <span>Plantilla</span>
-                      <span className="text-brand-900">{rec.templateKey}</span>
-                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-brand-700 bg-brand-50 px-3 py-1 rounded-full border border-brand-100">
+                        <span>Plantilla</span>
+                        <span className="text-brand-900">{rec.templateKey}</span>
+                      </span>
+                    </div>
                   </div>
                   <ProbabilityBadge level={rec.probability} />
                 </div>
-                
-                <p className="text-slate-600 mb-8 leading-relaxed text-lg">
+
+                <div className="mt-6 border-l-4 border-brand-500/70 bg-brand-50/60 px-5 py-4 rounded-r-xl text-slate-700 leading-relaxed">
                   {rec.description}
-                </p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Requisitos */}
-                  <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
-                     <p className="font-bold text-slate-900 mb-4 uppercase tracking-wide text-xs flex items-center gap-2">
-                       <span className="text-brand-500">📌</span> Requisitos Clave
-                     </p>
-                     <ul className="space-y-3">
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                  <div className="rounded-xl border border-slate-100 bg-white px-6 py-5 shadow-[0_6px_20px_rgba(3,18,71,0.05)]">
+                    <p className="font-bold text-slate-900 mb-4 uppercase tracking-wide text-xs flex items-center gap-2">
+                      <span className="text-brand-700">›</span> Requisitos esenciales
+                    </p>
+                    <ul className="space-y-3">
                       {rec.requirements.map((req, rIdx) => (
-                        <li key={rIdx} className="flex items-start text-slate-700 text-sm">
-                          <span className="text-slate-400 mr-2 mt-0.5">•</span>
+                        <li key={rIdx} className="flex items-start text-slate-700 text-sm leading-relaxed">
+                          <span className="text-brand-600 mr-2 mt-0.5">›</span>
                           {req}
                         </li>
                       ))}
                     </ul>
                   </div>
 
-                  {/* Documentación */}
-                  <div className="bg-white p-6 rounded-xl border border-slate-200 border-dashed">
-                     <p className="font-bold text-slate-900 mb-4 uppercase tracking-wide text-xs flex items-center gap-2">
-                       <span className="text-brand-500">🗂️</span> Documentación a Presentar
-                     </p>
-                     <ul className="space-y-3">
-                      {rec.documents && rec.documents.length > 0 ? rec.documents.map((doc, dIdx) => (
-                        <li key={dIdx} className="flex items-start text-slate-700 text-sm">
-                          <span className="text-slate-400 mr-2 mt-0.5">•</span>
-                          {doc}
-                        </li>
-                      )) : (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-6 py-5 shadow-[0_6px_20px_rgba(3,18,71,0.03)]">
+                    <p className="font-bold text-slate-900 mb-4 uppercase tracking-wide text-xs flex items-center gap-2">
+                      <span className="text-brand-600">📁</span> Documentación inicial
+                    </p>
+                    <ul className="space-y-3">
+                      {rec.documents && rec.documents.length > 0 ? (
+                        rec.documents.map((doc, dIdx) => (
+                          <li key={dIdx} className="flex items-start text-slate-700 text-sm leading-relaxed">
+                            <span className="text-slate-400 mr-2 mt-0.5">•</span>
+                            {doc}
+                          </li>
+                        ))
+                      ) : (
                         <li className="text-slate-400 text-sm italic">Se detallará en consulta.</li>
                       )}
                     </ul>
-                     <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                        <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">Tiempo Estimado</span>
-                        <span className="text-brand-700 font-bold bg-brand-50 px-3 py-1 rounded-full text-sm">{rec.estimatedTime}</span>
-                     </div>
+                    <div className="mt-6 pt-4 border-t border-slate-200 flex items-center justify-between text-xs uppercase tracking-wide">
+                      <span className="text-slate-500 font-semibold">Plazo estimado</span>
+                      <span className="text-slate-900 font-bold">{rec.estimatedTime}</span>
+                    </div>
                   </div>
                 </div>
               </div>
