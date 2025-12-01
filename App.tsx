@@ -37,8 +37,8 @@ const App: React.FC = () => {
       <main className="flex flex-col items-center px-4 py-10 sm:py-14">
         <div className="max-w-4xl w-full flex flex-col items-center gap-6 text-center">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-3 rounded-full bg-[#36ccca]/15 px-4 py-2">
-              <img src="/sentir-logo.svg" alt="Extranjería Assistant" className="h-10 w-auto" />
+            <div className="inline-flex items-center gap-3 rounded-full bg-[#36ccca]/15 px-5 py-3">
+              <img src="/sentir-logo.svg" alt="Extranjeria Assistant" className="h-14 w-auto" />
             </div>
             <p className="text-base text-[#4a5d7a]">
               Responde en menos de 2 minutos y te mostramos el camino más viable.

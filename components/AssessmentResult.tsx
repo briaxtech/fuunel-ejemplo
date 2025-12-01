@@ -69,7 +69,7 @@ export const AssessmentResult: React.FC<AssessmentResultProps> = ({ result, prof
       
       {/* Summary Header */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 md:p-10 mb-10 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-slate-900"></div>
+        <div className="absolute top-0 left-0 w-full h-1 bg-brand-500"></div>
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
           <div className="text-left">
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-slate-900">Dictamen Preliminar</h2>
@@ -182,7 +182,13 @@ export const AssessmentResult: React.FC<AssessmentResultProps> = ({ result, prof
           {result.actionReasoning}
         </p>
 
-        <div className={`max-w-2xl mx-auto rounded-3xl shadow-xl overflow-hidden ${isScheduleAction ? 'bg-brand-900 text-white' : 'bg-white border border-slate-200'}`}>
+        <div
+          className={`max-w-2xl mx-auto rounded-3xl shadow-xl overflow-hidden ${
+            isScheduleAction
+              ? 'bg-gradient-to-br from-[#0b2f4f] via-[#0c2344] to-[#0a1a33] text-white border border-[#0f2745]'
+              : 'bg-white border border-slate-200'
+          }`}
+        >
           
           {submitted ? (
             <div className="p-16 text-center animate-fade-in">
@@ -225,7 +231,7 @@ export const AssessmentResult: React.FC<AssessmentResultProps> = ({ result, prof
                     onChange={(e) => setContactForm(prev => ({...prev, email: e.target.value}))}
                     className={`w-full px-5 py-4 rounded-xl outline-none focus:ring-2 transition-all text-lg ${
                       isScheduleAction 
-                        ? 'bg-brand-800 border-transparent text-white placeholder-brand-400 focus:ring-white' 
+                        ? 'bg-[#0f2745] border border-[#15345a] text-white placeholder-brand-300 focus:ring-brand-400' 
                         : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-brand-500'
                     }`}
                   />
@@ -242,7 +248,7 @@ export const AssessmentResult: React.FC<AssessmentResultProps> = ({ result, prof
                       placeholder="+34 600 000 000"
                       value={contactForm.phone}
                       onChange={(e) => setContactForm(prev => ({...prev, phone: e.target.value}))}
-                      className="w-full px-5 py-4 rounded-xl bg-brand-800 border-transparent text-white placeholder-brand-400 focus:ring-white outline-none focus:ring-2 transition-all text-lg"
+                      className="w-full px-5 py-4 rounded-xl bg-[#0f2745] border border-[#15345a] text-white placeholder-brand-300 focus:ring-brand-400 outline-none focus:ring-2 transition-all text-lg"
                     />
                   </div>
                 )}
@@ -252,7 +258,7 @@ export const AssessmentResult: React.FC<AssessmentResultProps> = ({ result, prof
                   disabled={sending}
                   className={`w-full py-5 rounded-xl font-bold text-lg shadow-lg hover:scale-[1.01] active:scale-[0.98] transition-all mt-6 ${
                     isScheduleAction 
-                      ? 'bg-white text-brand-900 hover:bg-brand-50' 
+                      ? 'bg-gradient-to-r from-brand-400 to-brand-500 text-brand-900 hover:opacity-95' 
                       : 'bg-slate-900 text-white hover:bg-slate-800'
                   }`}
                 >
