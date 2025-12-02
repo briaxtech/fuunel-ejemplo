@@ -60,38 +60,39 @@ const COUNTRIES = [
 ];
 
 const PHONE_CODES = [
-  { code: "+54", country: "Argentina", flag: "🇦🇷" },
-  { code: "+591", country: "Bolivia", flag: "🇧🇴" },
-  { code: "+55", country: "Brasil", flag: "🇧🇷" },
-  { code: "+56", country: "Chile", flag: "🇨🇱" },
-  { code: "+86", country: "China", flag: "🇨🇳" },
-  { code: "+57", country: "Colombia", flag: "🇨🇴" },
-  { code: "+506", country: "Costa Rica", flag: "🇨🇷" },
-  { code: "+53", country: "Cuba", flag: "🇨🇺" },
-  { code: "+593", country: "Ecuador", flag: "🇪🇨" },
-  { code: "+503", country: "El Salvador", flag: "🇸🇻" },
-  { code: "+1", country: "Estados Unidos", flag: "🇺🇸" },
-  { code: "+63", country: "Filipinas", flag: "🇵🇭" },
-  { code: "+33", country: "Francia", flag: "🇫🇷" },
-  { code: "+502", country: "Guatemala", flag: "🇬🇹" },
-  { code: "+504", country: "Honduras", flag: "🇭🇳" },
-  { code: "+39", country: "Italia", flag: "🇮🇹" },
-  { code: "+212", country: "Marruecos", flag: "🇲🇦" },
-  { code: "+52", country: "México", flag: "🇲🇽" },
-  { code: "+505", country: "Nicaragua", flag: "🇳🇮" },
-  { code: "+92", country: "Pakistán", flag: "🇵🇰" },
-  { code: "+507", country: "Panamá", flag: "🇵🇦" },
-  { code: "+595", country: "Paraguay", flag: "🇵🇾" },
-  { code: "+51", country: "Perú", flag: "🇵🇪" },
-  { code: "+351", country: "Portugal", flag: "🇵🇹" },
-  { code: "+44", country: "Reino Unido", flag: "🇬🇧" },
-  { code: "+1", country: "República Dominicana", flag: "🇩🇴" },
-  { code: "+40", country: "Rumanía", flag: "🇷🇴" },
-  { code: "+7", country: "Rusia", flag: "🇷🇺" },
-  { code: "+221", country: "Senegal", flag: "🇸🇳" },
-  { code: "+380", country: "Ucrania", flag: "🇺🇦" },
-  { code: "+598", country: "Uruguay", flag: "🇺🇾" },
-  { code: "+58", country: "Venezuela", flag: "🇻🇪" },
+  { code: "+34", country: "España", iso: "es" },
+  { code: "+54", country: "Argentina", iso: "ar" },
+  { code: "+591", country: "Bolivia", iso: "bo" },
+  { code: "+55", country: "Brasil", iso: "br" },
+  { code: "+56", country: "Chile", iso: "cl" },
+  { code: "+86", country: "China", iso: "cn" },
+  { code: "+57", country: "Colombia", iso: "co" },
+  { code: "+506", country: "Costa Rica", iso: "cr" },
+  { code: "+53", country: "Cuba", iso: "cu" },
+  { code: "+593", country: "Ecuador", iso: "ec" },
+  { code: "+503", country: "El Salvador", iso: "sv" },
+  { code: "+1", country: "Estados Unidos", iso: "us" },
+  { code: "+63", country: "Filipinas", iso: "ph" },
+  { code: "+33", country: "Francia", iso: "fr" },
+  { code: "+502", country: "Guatemala", iso: "gt" },
+  { code: "+504", country: "Honduras", iso: "hn" },
+  { code: "+39", country: "Italia", iso: "it" },
+  { code: "+212", country: "Marruecos", iso: "ma" },
+  { code: "+52", country: "México", iso: "mx" },
+  { code: "+505", country: "Nicaragua", iso: "ni" },
+  { code: "+92", country: "Pakistán", iso: "pk" },
+  { code: "+507", country: "Panamá", iso: "pa" },
+  { code: "+595", country: "Paraguay", iso: "py" },
+  { code: "+51", country: "Perú", iso: "pe" },
+  { code: "+351", country: "Portugal", iso: "pt" },
+  { code: "+44", country: "Reino Unido", iso: "gb" },
+  { code: "+1", country: "República Dominicana", iso: "do" },
+  { code: "+40", country: "Rumanía", iso: "ro" },
+  { code: "+7", country: "Rusia", iso: "ru" },
+  { code: "+221", country: "Senegal", iso: "sn" },
+  { code: "+380", country: "Ucrania", iso: "ua" },
+  { code: "+598", country: "Uruguay", iso: "uy" },
+  { code: "+58", country: "Venezuela", iso: "ve" },
 ];
 
 const AGES = Array.from({ length: 83 }, (_, i) => 18 + i); // 18 to 100
@@ -123,48 +124,114 @@ const initialContact: ContactInfo = {
   phone: ''
 };
 
-const ChoiceCard = ({
+const ChoiceCard: React.FC<{
+  selected: boolean;
+  onClick: () => void;
+  title: string;
+  icon: React.ReactNode;
+}> = ({
   selected,
   onClick,
   title,
   icon
-}: {
-  selected: boolean;
-  onClick: () => void;
-  title: string;
-  icon: string;
 }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`w-full text-left rounded-2xl border bg-white/85 p-4 sm:p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#36ccca] hover:bg-[#e6f8f9] hover:shadow-md ${selected ? 'border-[#36ccca] bg-[#d9f3f4] shadow-md' : 'border-[#d5dfec]'
-      }`}
-  >
-    <div className="flex items-center justify-between gap-4">
-      <div className="flex items-center gap-3">
-        <span className="text-xl text-[#0e2f76]">{icon}</span>
-        <span className="text-lg font-semibold text-[#031247]">{title}</span>
-      </div>
-      {selected && (
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#36ccca]/25 text-[#0e2f76]">
-          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-              clipRule="evenodd"
-            />
-          </svg>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full text-left rounded-2xl border bg-white/85 p-4 sm:p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#36ccca] hover:bg-[#e6f8f9] hover:shadow-md ${selected ? 'border-[#36ccca] bg-[#d9f3f4] shadow-md' : 'border-[#d5dfec]'
+        }`}
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <span className="text-xl text-[#0e2f76]">{icon}</span>
+          <span className="text-lg font-semibold text-[#031247]">{title}</span>
         </div>
+        {selected && (
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#36ccca]/25 text-[#0e2f76]">
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+                crossOrigin="anonymous"
+              />
+            </svg>
+          </div>
+        )}
+      </div>
+    </button>
+  );
+
+const PhonePrefixSelect = ({
+  selectedIso,
+  onChange,
+  options
+}: {
+  selectedIso: string;
+  onChange: (iso: string) => void;
+  options: typeof PHONE_CODES;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find(opt => opt.iso === selectedIso) || options[0];
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-4 text-lg outline-none focus:border-[#36ccca] focus:ring-2 focus:ring-[#36ccca]/20 transition-all shadow-sm"
+      >
+        <img
+          src={`https://flagcdn.com/w40/${selectedOption.iso}.png`}
+          srcSet={`https://flagcdn.com/w80/${selectedOption.iso}.png 2x`}
+          width="24"
+          alt={selectedOption.country}
+          className="rounded-sm object-cover"
+        />
+        <span>{selectedOption.code}</span>
+        <svg className={`ml-auto h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+          <div className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-gray-100 bg-white shadow-lg py-1">
+            {options.map((option) => (
+              <button
+                key={option.iso}
+                type="button"
+                onClick={() => {
+                  onChange(option.iso);
+                  setIsOpen(false);
+                }}
+                className={`flex w-full items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50 ${option.iso === selectedIso ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+              >
+                <img
+                  src={`https://flagcdn.com/w40/${option.iso}.png`}
+                  srcSet={`https://flagcdn.com/w80/${option.iso}.png 2x`}
+                  width="20"
+                  alt={option.country}
+                  className="rounded-sm object-cover"
+                />
+                <span className="font-medium">{option.code}</span>
+                <span className="truncate text-gray-400 text-xs ml-auto">{option.country}</span>
+              </button>
+            ))}
+          </div>
+        </>
       )}
     </div>
-  </button>
-);
+  );
+};
 
 export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLoading }) => {
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState<UserProfile>(initialData);
   const [contactData, setContactData] = useState<ContactInfo>(initialContact);
   const [phonePrefix, setPhonePrefix] = useState("+34");
+  const [phoneIso, setPhoneIso] = useState("es");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [lastSavedAt, setLastSavedAt] = useState<number>(() => Date.now());
   const containerRef = useRef<HTMLDivElement>(null);
@@ -187,6 +254,7 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
         const foundPrefix = PHONE_CODES.find(p => phone.startsWith(p.code));
         if (foundPrefix) {
           setPhonePrefix(foundPrefix.code);
+          setPhoneIso(foundPrefix.iso);
           setPhoneNumber(phone.slice(foundPrefix.code.length).trim());
         } else {
           setPhoneNumber(phone);
@@ -354,7 +422,16 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
           />
           <ChoiceCard
             title="Ya estoy en España"
-            icon="🇪🇸"
+            icon={
+              <img
+                src="https://flagcdn.com/w40/es.png"
+                srcSet="https://flagcdn.com/w80/es.png 2x"
+                width="24"
+                height="18"
+                alt="España"
+                className="rounded-sm object-cover"
+              />
+            }
             selected={formData.locationStatus === 'spain'}
             onClick={() => updateField('locationStatus', 'spain')}
           />
@@ -651,7 +728,20 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
             { id: 'reside_work', text: 'Vivir y Trabajar', icon: '💼' },
             { id: 'study', text: 'Estudiar / Prácticas', icon: '🎓' },
             { id: 'family', text: 'Reagruparme con familia', icon: '👨‍👩‍👧' },
-            { id: 'nationality', text: 'Obtener Nacionalidad', icon: '🇪🇸' },
+            {
+              id: 'nationality',
+              text: 'Obtener Nacionalidad',
+              icon: (
+                <img
+                  src="https://flagcdn.com/w40/es.png"
+                  srcSet="https://flagcdn.com/w80/es.png 2x"
+                  width="24"
+                  height="18"
+                  alt="España"
+                  className="rounded-sm object-cover"
+                />
+              )
+            },
           ].map((opt) => (
             <ChoiceCard
               key={opt.id}
@@ -719,18 +809,16 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
               Teléfono móvil
             </label>
             <div className="flex gap-2">
-              <div className="w-1/3 sm:w-1/4">
-                <select
-                  className="w-full rounded-xl border-gray-200 bg-white p-3 text-base outline-none focus:border-[#36ccca] focus:ring-2 focus:ring-[#36ccca]/20 transition-all shadow-sm"
-                  value={phonePrefix}
-                  onChange={(e) => setPhonePrefix(e.target.value)}
-                >
-                  {PHONE_CODES.map((country) => (
-                    <option key={country.code + country.country} value={country.code}>
-                      {country.flag} {country.code}
-                    </option>
-                  ))}
-                </select>
+              <div className="w-[45%] sm:w-[35%]">
+                <PhonePrefixSelect
+                  selectedIso={phoneIso}
+                  onChange={(iso) => {
+                    setPhoneIso(iso);
+                    const code = PHONE_CODES.find(p => p.iso === iso)?.code;
+                    if (code) setPhonePrefix(code);
+                  }}
+                  options={PHONE_CODES}
+                />
               </div>
               <div className="flex-1">
                 <Input
