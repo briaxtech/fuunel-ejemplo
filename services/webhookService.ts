@@ -1,4 +1,4 @@
-import { AIAnalysisResult, UserProfile } from "../types";
+import { AIAnalysisResult, ContactInfo, UserProfile } from "../types";
 
 const WEBHOOK_URL =
   (import.meta as any).env?.VITE_N8N_WEBHOOK_URL ||
@@ -7,10 +7,7 @@ const WEBHOOK_URL =
 export interface WebhookPayload {
   profile: UserProfile;
   analysis: AIAnalysisResult;
-  contact: {
-    email: string;
-    phone?: string;
-  };
+  contact: ContactInfo;
   action: string;
   timestamp: string;
 }

@@ -1,12 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { EducationLevel, ImmigrationStatus, TimeInSpain, UserProfile } from '../types';
+import { ContactInfo, EducationLevel, ImmigrationStatus, TimeInSpain, UserProfile } from '../types';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
 
 interface ImmigrationFormProps {
-  onSubmit: (data: UserProfile) => void;
+  onSubmit: (data: UserProfile, contact: ContactInfo) => void;
   isLoading: boolean;
 }
+
+export const FORM_STORAGE_KEY = 'immigration-form-cache-v1';
+const EXPIRATION_MS = 6 * 60 * 1000;
 
 const PROVINCES = [
   "Álava", "Albacete", "Alicante", "Almería", "Asturias", "Ávila", "Badajoz", "Baleares",
@@ -44,6 +47,11 @@ const initialData: UserProfile = {
   isEmpadronado: null,
   jobOffer: null,
   comments: ''
+};
+
+const initialContact: ContactInfo = {
+  email: '',
+  phone: ''
 };
 
 const ChoiceCard = ({
@@ -87,7 +95,53 @@ const ChoiceCard = ({
 export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLoading }) => {
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState<UserProfile>(initialData);
+  const [contactData, setContactData] = useState<ContactInfo>(initialContact);
+  const [lastSavedAt, setLastSavedAt] = useState<number>(() => Date.now());
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Hydrate from localStorage (auto-expires)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const raw = localStorage.getItem(FORM_STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed.timestamp || Date.now() - parsed.timestamp > EXPIRATION_MS) {
+        localStorage.removeItem(FORM_STORAGE_KEY);
+        return;
+      }
+      if (parsed.formData) setFormData(parsed.formData);
+      if (parsed.contactData) setContactData(parsed.contactData);
+      if (typeof parsed.step === 'number') setStep(parsed.step);
+      setLastSavedAt(parsed.timestamp);
+    } catch {
+      localStorage.removeItem(FORM_STORAGE_KEY);
+    }
+  }, []);
+
+  // Persist on every change
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const payload = {
+      formData,
+      contactData,
+      step,
+      timestamp: Date.now()
+    };
+    setLastSavedAt(payload.timestamp);
+    localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(payload));
+  }, [formData, contactData, step]);
+
+  // Auto-clear after expiration while page stays open
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const now = Date.now();
+    const timeLeft = Math.max(EXPIRATION_MS - (now - lastSavedAt), 0);
+    const timer = window.setTimeout(() => {
+      localStorage.removeItem(FORM_STORAGE_KEY);
+    }, timeLeft);
+    return () => clearTimeout(timer);
+  }, [lastSavedAt]);
 
   // Scroll to top on step change
   useEffect(() => {
@@ -105,7 +159,7 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit(formData, contactData);
   };
 
   // Steps Configuration
@@ -395,18 +449,59 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
         </div>
       )
     },
+
     {
       id: 'final',
-      title: 'Información Adicional',
-      description: 'Cualquier detalle extra ayuda a nuestro asistente de IA a ser más preciso.',
+      title: 'Tu situacion en detalle',
+      description: 'Cuentanos tu contexto general y particular para afinar la orientacion.',
       render: () => (
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="space-y-6">
           <textarea
             className="w-full bg-white/90 text-lg p-5 rounded-2xl shadow-sm border border-[#d5dfec] focus:ring-2 focus:ring-[#36ccca]/50 outline-none resize-none h-40 transition-shadow text-[#031247] placeholder:text-[#6b7a99]"
-            placeholder="Ej. Entré como turista en 2021, intenté pedir asilo pero no lo formalicé..."
+            placeholder="Cuentanos todo lo que puedas: como llegaste, plazos importantes, que necesitas lograr y cualquier detalle que pueda ayudar."
             value={formData.comments}
             onChange={(e) => updateField('comments', e.target.value)}
           ></textarea>
+
+          <div className="p-4 bg-white/90 rounded-xl border border-[#d5dfec] text-sm text-[#4a5d7a] shadow-sm">
+            Entre mas contexto compartas, mas precisa sera la revision que recibiras por correo.
+          </div>
+
+          <button
+            type="button"
+            onClick={handleNext}
+            className="action-btn"
+          >
+            Continuar
+          </button>
+        </div>
+      )
+    },
+    {
+      id: 'contact',
+      title: 'Datos de contacto',
+      description: 'Envianos tu informacion y te responderemos directamente por email.',
+      render: () => (
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <Input
+            label="Tu correo electronico"
+            type="email"
+            required
+            placeholder="ejemplo@correo.com"
+            value={contactData.email}
+            disabled={isLoading}
+            onChange={(e) => setContactData(prev => ({ ...prev, email: e.target.value }))}
+          />
+
+          <Input
+            label="Telefono movil"
+            type="tel"
+            required
+            placeholder="+34 600 000 000"
+            value={contactData.phone}
+            disabled={isLoading}
+            onChange={(e) => setContactData(prev => ({ ...prev, phone: e.target.value }))}
+          />
 
           <button
             type="submit"
@@ -419,26 +514,29 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Analizando perfil...
+                Enviando solicitud...
               </>
             ) : (
-              'Obtener Análisis Legal'
+              'Enviar y finalizar'
             )}
           </button>
           <p className="text-center text-[#4a5d7a] text-xs mt-2">
-            Al continuar, aceptas el procesamiento de tus datos para fines de orientación.
+            Te enviaremos el desglose completo por correo electronico.
           </p>
         </form>
       )
     }
   ];
 
+
   const totalSteps = steps.length;
-  const currentStepData = steps[step];
-  const progress = Math.round(((step + 1) / totalSteps) * 100);
+  const safeStepIndex = Math.min(step, totalSteps - 1);
+  const currentStepData = steps[safeStepIndex];
+  const progress = Math.round(((safeStepIndex + 1) / totalSteps) * 100);
   const headerTitle = currentStepData.title || 'Conozcamos tu caso';
   const headerDescription =
-    currentStepData.description || 'Preguntas cortas para entender tu situación y darte una guía clara.';
+    currentStepData.description || 'Preguntas cortas para entender tu situacion y darte una guia clara.';
+
 
   return (
     <div className="w-full max-w-3xl mx-auto px-4">
@@ -449,7 +547,7 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
               Formulario
             </span>
             <span className="text-xs font-semibold uppercase tracking-wide text-[#4a5d7a]">
-              Paso {step + 1} de {totalSteps}
+              Paso {safeStepIndex + 1} de {totalSteps}
             </span>
             <span className="text-xs font-semibold uppercase tracking-wide text-[#4a5d7a]">
               {headerTitle}

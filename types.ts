@@ -35,6 +35,11 @@ export enum NextStepAction {
   GATHER_DOCUMENTS = 'GATHER_DOCUMENTS'            // User needs to prepare first
 }
 
+export interface ContactInfo {
+  email: string;
+  phone: string;
+}
+
 export interface UserProfile {
   firstName: string;
   lastName: string;

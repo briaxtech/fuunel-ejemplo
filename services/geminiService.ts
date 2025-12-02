@@ -6,14 +6,14 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY || process.env.API_KEY,
 });
 
-const ALLOWED_TEMPLATE_KEYS = TEMPLATE_KEYS.length ? TEMPLATE_KEYS : ["SIN_PLANTILLA"];
+const ALLOWED_TEMPLATE_KEYS = [...(TEMPLATE_KEYS.length ? TEMPLATE_KEYS : []), "SIN_PLANTILLA"];
 
 const analysisSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     summary: {
       type: Type.STRING,
-      description: "Un resumen breve y empático de la situación legal actual del usuario en España.",
+      description: "Un resumen breve y empático de la situación legal actual del usuario en España, mencionando sus puntos clave (tiempo, estatus, etc).",
     },
     recommendations: {
       type: Type.ARRAY,
@@ -31,7 +31,7 @@ const analysisSchema: Schema = {
           templateKey: {
             type: Type.STRING,
             enum: ALLOWED_TEMPLATE_KEYS,
-            description: "template_key exacto de templates.csv que mejor aplica según el instructivo de la plantilla."
+            description: "El 'template_key' EXACTO del archivo CSV que corresponde a este trámite. Si NINGUNA plantilla encaja perfectamente, usa 'SIN_PLANTILLA'. ES CRÍTICO NO EQUIVOCARSE AQUÍ."
           },
           requirements: {
             type: Type.ARRAY,
@@ -72,18 +72,23 @@ const analysisSchema: Schema = {
 export const analyzeImmigrationProfile = async (profile: UserProfile): Promise<AIAnalysisResult> => {
   const prompt = `
     Actúa como un abogado experto en extranjería e inmigración en España (Extranjería).
-    Tu objetivo es funcionar como un 'Motor de Reglas' estricto para filtrar posibles clientes para un despacho de abogados.
+    Tu objetivo es analizar el perfil del cliente y seleccionar la plantilla de respuesta (templateKey) MÁS ADECUADA del catálogo proporcionado.
 
-    CATÁLOGO DE PLANTILLAS (fuente de verdad - templates.csv):
+    IMPORTANTE:
+    1. Tu prioridad ABSOLUTA es elegir el 'templateKey' correcto.
+    2. Si el cliente cumple los requisitos de una plantilla, ÚSALA.
+    3. Si NO estás 100% seguro o ninguna plantilla encaja bien, usa "SIN_PLANTILLA".
+    4. ES PREFERIBLE "SIN_PLANTILLA" A ENVIAR INFORMACIÓN INCORRECTA.
+
+    EJEMPLO DE LÓGICA:
+    - Cliente: "Llevo 2 años de residencia legal y quiero la nacionalidad".
+    - Acción: Verificar requisitos de nacionalidad iberoamericana (2 años).
+    - Selección: "NACIONALIDAD 2024".
+
+    CATÁLOGO DE PLANTILLAS (fuente de verdad):
     ${TEMPLATE_SUMMARY}
 
-    Reglas de uso de plantillas:
-    - Solo puedes recomendar trámites que existan en la lista anterior.
-    - Cada recomendación debe indicar el campo templateKey exactamente igual al template_key elegido.
-    - Usa las descripciones de la plantilla como criterio de elegibilidad. No inventes otros trámites ni varíes sus nombres.
-    - Si ninguna opción encaja perfectamente, elige la que mejor aplique y explica el encaje en la descripción.
-    
-    Perfil del Usuario:
+    Perfil del Usuario a Analizar:
     - Nacionalidad: ${profile.nationality}
     - Edad: ${profile.age}
     - Nivel de Estudios: ${profile.educationLevel}
@@ -97,20 +102,15 @@ export const analyzeImmigrationProfile = async (profile: UserProfile): Promise<A
     - Familia en España: ${profile.hasFamilyInSpain ? "Sí" : "No"} (${profile.familyDetails || "Sin detalles"})
     - Comentarios adicionales: ${profile.comments}
 
-    Basado en la Ley de Extranjería vigente en España (incluyendo la reforma del reglamento si aplica) y las instrucciones SEM:
-    
-    1. Identifica los trámites viables (Arraigo Social, Arraigo para la Formación, Arraigo Laboral, Familiar de Comunitario, Asilo, Estancia por Estudios, etc.).
-    2. Si tiene 'Formación Profesional' o estudios superiores, prioriza evaluar el 'Arraigo para la Formación'.
-    3. Si es de un país iberoamericano, ten en cuenta convenios especiales si aplican (aunque es más para nacionalidad, a veces influye).
-    4. Proporciona la lista exacta de DOCUMENTOS necesarios para el trámite principal.
-
-    INSTRUCCIONES CLAVE SOBRE LOCALIZACIÓN:
-    El usuario reside en la provincia de ${profile.province}. 
-    Menciona si esta oficina es conocida por demoras o criterios específicos si tienes esa información en tu base de conocimientos.
+    Instrucciones de Análisis:
+    1. Analiza los comentarios adicionales y el perfil para entender la intención del usuario.
+    2. Filtra las plantillas que NO aplican.
+    3. Selecciona la plantilla que MEJOR responde a la consulta específica.
+    4. Genera un resumen del estado del cliente (summary) que demuestre que has entendido su situación.
 
     CRITERIO DE ACCIÓN (nextStepAction):
     - Si detectas una vía clara con probabilidad ALTA o MEDIA: Sugiere agendar cita (SCHEDULE_CONSULTATION).
-    - Si el usuario NO cumple requisitos básicos (ej: lleva 1 mes en España irregular, tiene antecedentes penales graves, o no tiene ninguna vía legal actual): Sugiere preparar documentos/esperar (GATHER_DOCUMENTS) para no hacerle perder dinero en una consulta ahora.
+    - Si el usuario NO cumple requisitos básicos: Sugiere preparar documentos/esperar (GATHER_DOCUMENTS).
   `;
 
   try {
@@ -120,13 +120,13 @@ export const analyzeImmigrationProfile = async (profile: UserProfile): Promise<A
       config: {
         responseMimeType: "application/json",
         responseSchema: analysisSchema,
-        systemInstruction: "Eres un asistente legal experto en leyes de inmigración de España. Sé preciso, riguroso y estructurado."
+        systemInstruction: "Eres un asistente legal experto en leyes de inmigración de España. Sé preciso, riguroso y prioriza la corrección sobre la especulación."
       },
     });
 
     const text = response.text;
     if (!text) throw new Error("No response from AI");
-    
+
     return JSON.parse(text) as AIAnalysisResult;
   } catch (error) {
     console.error("Error analysing profile:", error);
