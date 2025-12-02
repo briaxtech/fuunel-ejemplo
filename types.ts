@@ -1,6 +1,7 @@
 export enum ImmigrationStatus {
   TOURIST = 'Turista (Estancia de 90 días)',
   STUDENT = 'Estudiante',
+  REGULAR = 'Situación Regular',
   IRREGULAR = 'Situación Irregular (Sin papeles)',
   EXPIRED_RESIDENCY = 'Residencia Caducada',
   ASYLUM_SEEKER = 'Solicitante de Asilo',
@@ -50,11 +51,11 @@ export interface UserProfile {
   currentStatus: ImmigrationStatus;
   timeInSpain: TimeInSpain;
   province: string;
-  hasCriminalRecord: boolean | null; 
-  hasFamilyInSpain: boolean | null;  
+  hasCriminalRecord: boolean | null;
+  hasFamilyInSpain: boolean | null;
   familyDetails?: string;
-  isEmpadronado: boolean | null;     
-  jobOffer: boolean | null;          
+  isEmpadronado: boolean | null;
+  jobOffer: boolean | null;
   comments: string;
 }
 

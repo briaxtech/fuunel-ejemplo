@@ -29,6 +29,42 @@ const COUNTRIES = [
   "Ucrania", "Uruguay", "Venezuela", "Otro"
 ];
 
+const PHONE_CODES = [
+  { code: "+34", country: "España", flag: "🇪🇸" },
+  { code: "+54", country: "Argentina", flag: "🇦🇷" },
+  { code: "+591", country: "Bolivia", flag: "🇧🇴" },
+  { code: "+55", country: "Brasil", flag: "🇧🇷" },
+  { code: "+56", country: "Chile", flag: "🇨🇱" },
+  { code: "+86", country: "China", flag: "🇨🇳" },
+  { code: "+57", country: "Colombia", flag: "🇨🇴" },
+  { code: "+506", country: "Costa Rica", flag: "🇨🇷" },
+  { code: "+53", country: "Cuba", flag: "🇨🇺" },
+  { code: "+593", country: "Ecuador", flag: "🇪🇨" },
+  { code: "+503", country: "El Salvador", flag: "🇸🇻" },
+  { code: "+1", country: "Estados Unidos", flag: "🇺🇸" },
+  { code: "+63", country: "Filipinas", flag: "🇵🇭" },
+  { code: "+33", country: "Francia", flag: "🇫🇷" },
+  { code: "+502", country: "Guatemala", flag: "🇬🇹" },
+  { code: "+504", country: "Honduras", flag: "🇭🇳" },
+  { code: "+39", country: "Italia", flag: "🇮🇹" },
+  { code: "+212", country: "Marruecos", flag: "🇲🇦" },
+  { code: "+52", country: "México", flag: "🇲🇽" },
+  { code: "+505", country: "Nicaragua", flag: "🇳🇮" },
+  { code: "+92", country: "Pakistán", flag: "🇵🇰" },
+  { code: "+507", country: "Panamá", flag: "🇵🇦" },
+  { code: "+595", country: "Paraguay", flag: "🇵🇾" },
+  { code: "+51", country: "Perú", flag: "🇵🇪" },
+  { code: "+351", country: "Portugal", flag: "🇵🇹" },
+  { code: "+44", country: "Reino Unido", flag: "🇬🇧" },
+  { code: "+1", country: "República Dominicana", flag: "🇩🇴" },
+  { code: "+40", country: "Rumanía", flag: "🇷🇴" },
+  { code: "+7", country: "Rusia", flag: "🇷🇺" },
+  { code: "+221", country: "Senegal", flag: "🇸🇳" },
+  { code: "+380", country: "Ucrania", flag: "🇺🇦" },
+  { code: "+598", country: "Uruguay", flag: "🇺🇾" },
+  { code: "+58", country: "Venezuela", flag: "🇻🇪" },
+];
+
 const AGES = Array.from({ length: 83 }, (_, i) => 18 + i); // 18 to 100
 
 const initialData: UserProfile = {
@@ -68,9 +104,8 @@ const ChoiceCard = ({
   <button
     type="button"
     onClick={onClick}
-    className={`w-full text-left rounded-2xl border bg-white/85 p-4 sm:p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#36ccca] hover:bg-[#e6f8f9] hover:shadow-md ${
-      selected ? 'border-[#36ccca] bg-[#d9f3f4] shadow-md' : 'border-[#d5dfec]'
-    }`}
+    className={`w-full text-left rounded-2xl border bg-white/85 p-4 sm:p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#36ccca] hover:bg-[#e6f8f9] hover:shadow-md ${selected ? 'border-[#36ccca] bg-[#d9f3f4] shadow-md' : 'border-[#d5dfec]'
+      }`}
   >
     <div className="flex items-center justify-between gap-4">
       <div className="flex items-center gap-3">
@@ -96,6 +131,8 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState<UserProfile>(initialData);
   const [contactData, setContactData] = useState<ContactInfo>(initialContact);
+  const [phonePrefix, setPhonePrefix] = useState("+34");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [lastSavedAt, setLastSavedAt] = useState<number>(() => Date.now());
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -111,7 +148,17 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
         return;
       }
       if (parsed.formData) setFormData(parsed.formData);
-      if (parsed.contactData) setContactData(parsed.contactData);
+      if (parsed.contactData) {
+        setContactData(parsed.contactData);
+        const phone = parsed.contactData.phone || "";
+        const foundPrefix = PHONE_CODES.find(p => phone.startsWith(p.code));
+        if (foundPrefix) {
+          setPhonePrefix(foundPrefix.code);
+          setPhoneNumber(phone.slice(foundPrefix.code.length).trim());
+        } else {
+          setPhoneNumber(phone);
+        }
+      }
       if (typeof parsed.step === 'number') setStep(parsed.step);
       setLastSavedAt(parsed.timestamp);
     } catch {
@@ -122,15 +169,21 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
   // Persist on every change
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    const fullPhone = `${phonePrefix} ${phoneNumber}`.trim();
+    if (fullPhone !== contactData.phone) {
+      setContactData(prev => ({ ...prev, phone: fullPhone }));
+    }
+
     const payload = {
       formData,
-      contactData,
+      contactData: { ...contactData, phone: fullPhone },
       step,
       timestamp: Date.now()
     };
     setLastSavedAt(payload.timestamp);
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(payload));
-  }, [formData, contactData, step]);
+  }, [formData, contactData, step, phonePrefix, phoneNumber]);
 
   // Auto-clear after expiration while page stays open
   useEffect(() => {
@@ -319,6 +372,30 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
               className="border-0 shadow-none focus:ring-0 text-center text-2xl text-[#0e2f76] font-serif"
             />
           </div>
+          {formData.entryDate && formData.timeInSpain && (
+            (() => {
+              const entry = new Date(formData.entryDate);
+              const now = new Date();
+              const diffTime = Math.abs(now.getTime() - entry.getTime());
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              const diffYears = diffDays / 365.25;
+
+              let error = null;
+              if ((formData.timeInSpain === TimeInSpain.TWO_TO_THREE_YEARS || formData.timeInSpain === TimeInSpain.MORE_THAN_THREE_YEARS) && diffYears < 2) {
+                error = "Has indicado que llevas más de 2 años, pero la fecha seleccionada es menor a 2 años.";
+              }
+
+              if (error) {
+                return (
+                  <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-center gap-2">
+                    <span className="text-lg">⚠️</span>
+                    {error}
+                  </div>
+                );
+              }
+              return null;
+            })()
+          )}
 
           <div className="space-y-3 pt-2">
             <h4 className="font-semibold text-[#4a5d7a] uppercase text-xs ml-1 tracking-wider">Empadronamiento</h4>
@@ -339,7 +416,21 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
           </div>
 
           <button
-            disabled={!formData.entryDate || formData.isEmpadronado === null}
+            disabled={
+              !formData.entryDate ||
+              formData.isEmpadronado === null ||
+              (() => {
+                const entry = new Date(formData.entryDate);
+                const now = new Date();
+                const diffTime = Math.abs(now.getTime() - entry.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const diffYears = diffDays / 365.25;
+                if ((formData.timeInSpain === TimeInSpain.TWO_TO_THREE_YEARS || formData.timeInSpain === TimeInSpain.MORE_THAN_THREE_YEARS) && diffYears < 2) {
+                  return true;
+                }
+                return false;
+              })()
+            }
             onClick={handleNext}
             className="action-btn"
           >
@@ -493,15 +584,36 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
             onChange={(e) => setContactData(prev => ({ ...prev, email: e.target.value }))}
           />
 
-          <Input
-            label="Telefono movil"
-            type="tel"
-            required
-            placeholder="+34 600 000 000"
-            value={contactData.phone}
-            disabled={isLoading}
-            onChange={(e) => setContactData(prev => ({ ...prev, phone: e.target.value }))}
-          />
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-[#4a5d7a] ml-1">
+              Teléfono móvil
+            </label>
+            <div className="flex gap-2">
+              <div className="w-1/3 sm:w-1/4">
+                <select
+                  className="w-full rounded-xl border-gray-200 bg-white p-3 text-base outline-none focus:border-[#36ccca] focus:ring-2 focus:ring-[#36ccca]/20 transition-all shadow-sm"
+                  value={phonePrefix}
+                  onChange={(e) => setPhonePrefix(e.target.value)}
+                >
+                  {PHONE_CODES.map((country) => (
+                    <option key={country.code + country.country} value={country.code}>
+                      {country.flag} {country.code}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1">
+                <Input
+                  type="tel"
+                  required
+                  placeholder="600 000 000"
+                  value={phoneNumber}
+                  disabled={isLoading}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
 
           <button
             type="submit"
