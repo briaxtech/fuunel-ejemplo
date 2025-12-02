@@ -99,6 +99,11 @@ export const analyzeImmigrationProfile = async (profile: UserProfile): Promise<A
     3. Si NO estas 100% seguro o ninguna plantilla encaja bien, usa "SIN_PLANTILLA".
     4. ES PREFERIBLE "SIN_PLANTILLA" A ENVIAR INFORMACION INCORRECTA.
 
+    REGLAS ESTRICTAS DE REQUISITOS (usa el catalogo como verdad):
+    - ARRAIGO SOCIAL: requiere 2 años de permanencia y empadronamiento (NO 3). No digas "faltan X meses" a menos que el perfil lo indique en los datos.
+    - Si el perfil no cumple el tiempo mínimo, di claramente que no cumple ese requisito en lugar de inventar plazos.
+    - No modifiques los requisitos descritos en el catalogo; los requisitos que menciones deben coincidir con las descripciones proporcionadas.
+
     CONTEXTO DE PRECLASIFICACION:
     - Categoria de flujo: ${pre.flowCategory}
     - Plantillas candidatas permitidas:
