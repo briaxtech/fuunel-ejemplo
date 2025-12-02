@@ -1,36 +1,65 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ContactInfo, EducationLevel, ImmigrationStatus, TimeInSpain, UserProfile } from '../types';
-import { Input } from './ui/Input';
-import { Select } from './ui/Select';
+import React, { useState, useEffect, useRef } from 'react';
+import { UserProfile, ImmigrationStatus, EducationLevel, TimeInSpain, ContactInfo } from '../types';
 
 interface ImmigrationFormProps {
   onSubmit: (data: UserProfile, contact: ContactInfo) => void;
   isLoading: boolean;
 }
 
-export const FORM_STORAGE_KEY = 'immigration-form-cache-v1';
-const EXPIRATION_MS = 6 * 60 * 1000;
+const FORM_STORAGE_KEY = 'immigration_form_state';
+const EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+const Input = ({ label, className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string }) => (
+  <div className="space-y-2">
+    {label && <label className="block text-sm font-medium text-[#4a5d7a] ml-1">{label}</label>}
+    <input
+      className={`w-full rounded-xl border-gray-200 bg-white p-4 text-lg outline-none focus:border-[#36ccca] focus:ring-4 focus:ring-[#36ccca]/10 transition-all shadow-sm placeholder:text-gray-300 ${className}`}
+      {...props}
+    />
+  </div>
+);
+
+const Select = ({ label, options, className = "", ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string, options: { label: string, value: string }[] }) => (
+  <div className="space-y-2">
+    {label && <label className="block text-sm font-medium text-[#4a5d7a] ml-1">{label}</label>}
+    <div className="relative">
+      <select
+        className={`w-full appearance-none rounded-xl border-gray-200 bg-white p-4 text-lg outline-none focus:border-[#36ccca] focus:ring-4 focus:ring-[#36ccca]/10 transition-all shadow-sm ${className}`}
+        {...props}
+      >
+        <option value="" disabled>Selecciona una opción</option>
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[#4a5d7a]">
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </div>
+  </div>
+);
 
 const PROVINCES = [
-  "Álava", "Albacete", "Alicante", "Almería", "Asturias", "Ávila", "Badajoz", "Baleares",
-  "Barcelona", "Burgos", "Cáceres", "Cádiz", "Cantabria", "Castellón", "Ciudad Real",
-  "Córdoba", "Cuenca", "Girona", "Granada", "Guadalajara", "Guipúzcoa", "Huelva", "Huesca",
-  "Jaén", "La Rioja", "Las Palmas", "León", "Lleida", "Lugo", "Madrid", "Málaga", "Murcia",
-  "Navarra", "Ourense", "Palencia", "Pontevedra", "Salamanca", "Santa Cruz de Tenerife",
-  "Segovia", "Sevilla", "Soria", "Tarragona", "Teruel", "Toledo", "Valencia", "Valladolid",
-  "Vizcaya", "Zamora", "Zaragoza", "Ceuta", "Melilla"
-].sort();
+  "Álava", "Albacete", "Alicante", "Almería", "Asturias", "Ávila", "Badajoz", "Barcelona", "Burgos", "Cáceres",
+  "Cádiz", "Cantabria", "Castellón", "Ciudad Real", "Córdoba", "Cuenca", "Girona", "Granada", "Guadalajara",
+  "Guipúzcoa", "Huelva", "Huesca", "Islas Baleares", "Jaén", "La Coruña", "La Rioja", "Las Palmas", "León",
+  "Lleida", "Lugo", "Madrid", "Málaga", "Murcia", "Navarra", "Ourense", "Palencia", "Pontevedra", "Salamanca",
+  "Santa Cruz de Tenerife", "Segovia", "Sevilla", "Soria", "Tarragona", "Teruel", "Toledo", "Valencia",
+  "Valladolid", "Vizcaya", "Zamora", "Zaragoza", "Ceuta", "Melilla"
+];
 
 const COUNTRIES = [
-  "Argentina", "Bolivia", "Brasil", "Chile", "China", "Colombia", "Costa Rica",
-  "Cuba", "Ecuador", "El Salvador", "Estados Unidos", "Filipinas", "Francia", "Guatemala",
-  "Honduras", "Italia", "Marruecos", "México", "Nicaragua", "Pakistán", "Panamá", "Paraguay", "Perú",
-  "Portugal", "Reino Unido", "República Dominicana", "Rumanía", "Rusia", "Senegal",
-  "Ucrania", "Uruguay", "Venezuela", "Otro"
+  "Argentina", "Bolivia", "Brasil", "Chile", "Colombia", "Costa Rica", "Cuba", "Ecuador", "El Salvador",
+  "Guatemala", "Honduras", "México", "Nicaragua", "Panamá", "Paraguay", "Perú", "República Dominicana",
+  "Uruguay", "Venezuela", "Marruecos", "Argelia", "Senegal", "China", "Pakistán", "Filipinas", "Rusia",
+  "Ucrania", "Estados Unidos", "Reino Unido", "Otro"
 ];
 
 const PHONE_CODES = [
-  { code: "+34", country: "España", flag: "🇪🇸" },
   { code: "+54", country: "Argentina", flag: "🇦🇷" },
   { code: "+591", country: "Bolivia", flag: "🇧🇴" },
   { code: "+55", country: "Brasil", flag: "🇧🇷" },
@@ -82,7 +111,11 @@ const initialData: UserProfile = {
   familyDetails: '',
   isEmpadronado: null,
   jobSituation: '',
-  comments: ''
+  comments: '',
+  locationStatus: undefined,
+  familyNationality: undefined,
+  familyRelation: undefined,
+  primaryGoal: undefined
 };
 
 const initialContact: ContactInfo = {
@@ -296,6 +329,37 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
 
           <button
             disabled={!formData.nationality || !formData.age || !formData.educationLevel}
+            onClick={handleNext}
+            className="action-btn"
+          >
+            Continuar
+          </button>
+        </div>
+      )
+    },
+    {
+      id: 'current_location',
+      title: '¿Dónde te encuentras ahora?',
+      description: 'Esto determina si aplicas a un Visado (Consulado) o a un trámite de Extranjería.',
+      render: () => (
+        <div className="space-y-4">
+          <ChoiceCard
+            title="En mi país de origen (Fuera de España)"
+            icon="🌍"
+            selected={formData.locationStatus === 'origin'}
+            onClick={() => {
+              updateField('locationStatus', 'origin');
+              updateField('entryDate', '');
+            }}
+          />
+          <ChoiceCard
+            title="Ya estoy en España"
+            icon="🇪🇸"
+            selected={formData.locationStatus === 'spain'}
+            onClick={() => updateField('locationStatus', 'spain')}
+          />
+          <button
+            disabled={!formData.locationStatus}
             onClick={handleNext}
             className="action-btn"
           >
@@ -526,18 +590,49 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
           </div>
 
           {formData.hasFamilyInSpain && (
-            <div className="animate-fade-in">
-              <Input
-                label="Especifique el vínculo (Ej. Cónyuge, hijo, padre)"
-                placeholder="Ej. Mi esposa tiene nacionalidad española"
-                value={formData.familyDetails}
-                onChange={(e) => updateField('familyDetails', e.target.value)}
+            <div className="animate-fade-in space-y-4 mt-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+              <p className="text-sm font-semibold text-[#0e2f76]">¿Qué nacionalidad tiene tu familiar?</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => updateField('familyNationality', 'spanish_eu')}
+                  className={`p-3 rounded-lg border text-left text-sm ${formData.familyNationality === 'spanish_eu'
+                    ? 'border-[#36ccca] bg-[#d9f3f4] text-[#031247]'
+                    : 'border-gray-200 bg-white'
+                    }`}
+                >
+                  🇪🇺 Española / Europea
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateField('familyNationality', 'non_eu')}
+                  className={`p-3 rounded-lg border text-left text-sm ${formData.familyNationality === 'non_eu'
+                    ? 'border-[#36ccca] bg-[#d9f3f4] text-[#031247]'
+                    : 'border-gray-200 bg-white'
+                    }`}
+                >
+                  🌍 Extracomunitaria (Latinoamérica, etc)
+                </button>
+              </div>
+
+              <p className="text-sm font-semibold text-[#0e2f76] mt-3">¿Cuál es el vínculo legal?</p>
+              <Select
+                value={formData.familyRelation || ''}
+                onChange={(e) => updateField('familyRelation', e.target.value)}
+                options={[
+                  { label: 'Cónyuge (Matrimonio)', value: 'spouse' },
+                  { label: 'Pareja de Hecho (Inscrita en Registro)', value: 'registered_partner' },
+                  { label: 'Pareja estable (No inscrita/Novios)', value: 'unregistered_partner' },
+                  { label: 'Hijo/a', value: 'child' },
+                  { label: 'Padre/Madre', value: 'parent' },
+                ]}
+                label="Selecciona el vínculo"
               />
             </div>
           )}
 
           <button
-            disabled={formData.hasFamilyInSpain === null}
+            disabled={formData.hasFamilyInSpain === null || (formData.hasFamilyInSpain && (!formData.familyNationality || !formData.familyRelation))}
             onClick={handleNext}
             className="action-btn"
           >
@@ -546,7 +641,36 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
         </div>
       )
     },
-
+    {
+      id: 'intent',
+      title: '¿Cuál es tu objetivo principal?',
+      description: 'Ayúdanos a priorizar la mejor vía para ti.',
+      render: () => (
+        <div className="space-y-3">
+          {[
+            { id: 'reside_work', text: 'Vivir y Trabajar', icon: '💼' },
+            { id: 'study', text: 'Estudiar / Prácticas', icon: '🎓' },
+            { id: 'family', text: 'Reagruparme con familia', icon: '👨‍👩‍👧' },
+            { id: 'nationality', text: 'Obtener Nacionalidad', icon: '🇪🇸' },
+          ].map((opt) => (
+            <ChoiceCard
+              key={opt.id}
+              title={opt.text}
+              icon={opt.icon}
+              selected={formData.primaryGoal === opt.id}
+              onClick={() => updateField('primaryGoal', opt.id)}
+            />
+          ))}
+          <button
+            disabled={!formData.primaryGoal}
+            onClick={handleNext}
+            className="action-btn"
+          >
+            Continuar
+          </button>
+        </div>
+      )
+    },
     {
       id: 'final',
       title: 'Tu situacion en detalle',
@@ -646,7 +770,6 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
     }
   ];
 
-
   const totalSteps = steps.length;
   const safeStepIndex = Math.min(step, totalSteps - 1);
   const currentStepData = steps[safeStepIndex];
@@ -654,7 +777,6 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
   const headerTitle = currentStepData.title || 'Conozcamos tu caso';
   const headerDescription =
     currentStepData.description || 'Preguntas cortas para entender tu situacion y darte una guia clara.';
-
 
   return (
     <div className="w-full max-w-3xl mx-auto px-4">

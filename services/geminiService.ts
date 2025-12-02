@@ -96,10 +96,13 @@ export const analyzeImmigrationProfile = async (profile: UserProfile): Promise<A
     - Provincia de residencia: ${profile.province}
     - Estatus Actual: ${profile.currentStatus}
     - Tiempo en España: ${profile.timeInSpain}
+    - Ubicación Actual: ${profile.locationStatus === 'origin' ? "País de Origen" : "España"}
     - Empadronado: ${profile.isEmpadronado ? "Sí" : "No"}
     - Situación Laboral: ${profile.jobSituation}
     - Antecedentes Penales: ${profile.hasCriminalRecord ? "Sí" : "No"}
-    - Familia en España: ${profile.hasFamilyInSpain ? "Sí" : "No"} (${profile.familyDetails || "Sin detalles"})
+    - Familia en España: ${profile.hasFamilyInSpain ? "Sí" : "No"} 
+      ${profile.hasFamilyInSpain ? `(Nacionalidad: ${profile.familyNationality}, Vínculo: ${profile.familyRelation})` : ""}
+    - Objetivo Principal: ${profile.primaryGoal}
     - Comentarios adicionales: ${profile.comments}
 
     Instrucciones de Análisis:

@@ -57,6 +57,10 @@ export interface UserProfile {
   isEmpadronado: boolean | null;
   jobSituation: string;
   comments: string;
+  locationStatus?: 'origin' | 'spain';
+  familyNationality?: 'spanish_eu' | 'non_eu';
+  familyRelation?: 'spouse' | 'registered_partner' | 'unregistered_partner' | 'child' | 'parent';
+  primaryGoal?: 'reside_work' | 'study' | 'family' | 'nationality';
 }
 
 export interface Recommendation {
