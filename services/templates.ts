@@ -1,11 +1,26 @@
-import templatesCsv from '../templates.csv?raw';
-
 export interface TemplateRecord {
   template_key: string;
   descripcion: string;
   contenido: string;
   pdf_url?: string;
   descripcion_old?: string;
+}
+
+let templatesCsvRaw = '';
+
+try {
+  // Entorno con bundler (Vite) que soporta imports ?raw
+  const mod = await import('../templates.csv?raw');
+  templatesCsvRaw = (mod as any).default || (mod as any);
+} catch {
+  // Fallback para ejecución en Node (scripts/CI) donde no existe el loader de CSV
+  if (typeof process !== 'undefined' && process.release?.name === 'node') {
+    const fs = await import('node:fs');
+    const url = new URL('../templates.csv', import.meta.url);
+    templatesCsvRaw = fs.readFileSync(url, 'utf8');
+  } else {
+    throw new Error('No se pudo cargar templates.csv');
+  }
 }
 
 // Simple CSV parser that respects quoted fields and new lines inside quotes.
@@ -88,11 +103,15 @@ const parseTemplates = (raw: string): TemplateRecord[] => {
     .filter(entry => entry.template_key);
 };
 
-export const TEMPLATES: TemplateRecord[] = parseTemplates(templatesCsv);
+export const TEMPLATES: TemplateRecord[] = parseTemplates(templatesCsvRaw);
 export const TEMPLATE_KEYS = TEMPLATES.map(t => t.template_key);
 export const TEMPLATE_SUMMARY = TEMPLATES.map(
   t => `- ${t.template_key}: ${collapseSpaces(t.descripcion)}`,
 ).join('\n');
+export const TEMPLATE_SUMMARY_MAP = TEMPLATES.reduce<Record<string, string>>((acc, t) => {
+  acc[t.template_key] = collapseSpaces(t.descripcion);
+  return acc;
+}, {});
 
 export const findTemplateByKey = (key: string) =>
   TEMPLATES.find(t => t.template_key.toLowerCase() === key.toLowerCase());

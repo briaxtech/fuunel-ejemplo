@@ -6,7 +6,7 @@ interface ImmigrationFormProps {
   isLoading: boolean;
 }
 
-const FORM_STORAGE_KEY = 'immigration_form_state';
+export const FORM_STORAGE_KEY = 'immigration_form_state';
 const EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 const Input = ({ label, className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string }) => (
