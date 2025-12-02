@@ -81,7 +81,7 @@ const initialData: UserProfile = {
   hasFamilyInSpain: null,
   familyDetails: '',
   isEmpadronado: null,
-  jobOffer: null,
+  jobSituation: '',
   comments: ''
 };
 
@@ -441,24 +441,30 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
     },
     {
       id: 'job',
-      title: 'Ámbito Laboral',
-      description: '¿Cuentas con alguna oferta de empleo formal?',
+      title: 'Situación Laboral',
+      description: '¿Cuál es tu situación laboral actual?',
       render: () => (
         <div className="space-y-4">
           <ChoiceCard
-            title="Tengo una oferta de trabajo"
-            icon="✓"
-            selected={formData.jobOffer === true}
-            onClick={() => updateField('jobOffer', true)}
+            title="Estoy trabajando actualmente"
+            icon="💼"
+            selected={formData.jobSituation === 'working'}
+            onClick={() => updateField('jobSituation', 'working')}
           />
           <ChoiceCard
-            title="Sin oferta por ahora"
-            icon="✕"
-            selected={formData.jobOffer === false}
-            onClick={() => updateField('jobOffer', false)}
+            title="Tengo una oferta de trabajo"
+            icon="📄"
+            selected={formData.jobSituation === 'offer'}
+            onClick={() => updateField('jobSituation', 'offer')}
+          />
+          <ChoiceCard
+            title="No trabajo ni tengo oferta"
+            icon="🏠"
+            selected={formData.jobSituation === 'none'}
+            onClick={() => updateField('jobSituation', 'none')}
           />
           <button
-            disabled={formData.jobOffer === null}
+            disabled={!formData.jobSituation}
             onClick={handleNext}
             className="action-btn"
           >

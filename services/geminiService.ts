@@ -97,7 +97,7 @@ export const analyzeImmigrationProfile = async (profile: UserProfile): Promise<A
     - Estatus Actual: ${profile.currentStatus}
     - Tiempo en España: ${profile.timeInSpain}
     - Empadronado: ${profile.isEmpadronado ? "Sí" : "No"}
-    - Oferta de trabajo: ${profile.jobOffer ? "Sí" : "No"}
+    - Situación Laboral: ${profile.jobSituation}
     - Antecedentes Penales: ${profile.hasCriminalRecord ? "Sí" : "No"}
     - Familia en España: ${profile.hasFamilyInSpain ? "Sí" : "No"} (${profile.familyDetails || "Sin detalles"})
     - Comentarios adicionales: ${profile.comments}

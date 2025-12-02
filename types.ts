@@ -55,7 +55,7 @@ export interface UserProfile {
   hasFamilyInSpain: boolean | null;
   familyDetails?: string;
   isEmpadronado: boolean | null;
-  jobOffer: boolean | null;
+  jobSituation: string;
   comments: string;
 }
 
