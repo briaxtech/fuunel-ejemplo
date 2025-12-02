@@ -125,7 +125,8 @@ export const analyzeImmigrationProfile = async (profile: UserProfile): Promise<A
     1. Analiza los comentarios adicionales y el perfil para entender la intencion del usuario.
     2. Filtra las plantillas que NO aplican (solo dentro de la lista permitida).
     3. Selecciona la plantilla que MEJOR responde a la consulta especifica.
-    4. Genera un resumen del estado del cliente (summary) que demuestre que has entendido su situacion.
+    4. NO inventes plazos ni meses restantes: si el tiempo en Espana no indica 3+ años, limita a mencionar el requisito general (ej. “requiere 3 años continuados”) sin decir que faltan X meses, salvo que el perfil lo indique explicitamente.
+    5. Genera un resumen del estado del cliente (summary) que demuestre que has entendido su situacion. Si falta informacion critica (ej. tiempo exacto de estancia o pruebas de trabajo), indicalo en missingInfoWarning.
 
     CRITERIO DE ACCION (nextStepAction):
     - Si detectas una via clara con probabilidad ALTA o MEDIA: Sugiere agendar cita (SCHEDULE_CONSULTATION).
