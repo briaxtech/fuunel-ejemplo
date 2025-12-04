@@ -7,11 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "ai:test": "tsx run-tests.ts",
-    "ai:test:coverage": "tsx run-tests.ts --coverage"
+    "ai:test": "tsx scripts/run-ai-tests.ts",
+    "ai:test:dry": "tsx scripts/run-ai-tests.ts --dry-run",
+    "ai:test:list": "tsx scripts/run-ai-tests.ts --list",
+    "ai:test:save": "tsx scripts/run-ai-tests.ts --output=test-results.json",
+    "test:ai": "npm run ai:test"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
+    "@google/generative-ai": "^0.24.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
@@ -20,7 +24,9 @@
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "colors": "^1.4.0",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.2.3",
+    "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"

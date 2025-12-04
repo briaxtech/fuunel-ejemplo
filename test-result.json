@@ -1,0 +1,526 @@
+{
+  "timestamp": "2025-12-04T10:28:14.091Z",
+  "summary": {
+    "total": 30,
+    "passed": 29,
+    "failed": 1
+  },
+  "results": [
+    {
+      "id": "arraigo-social-1",
+      "name": "Irregular 3.5 años empadronado, trabajo informal",
+      "status": "passed",
+      "durationMs": 12389,
+      "flowCategory": "ARRAIGOS",
+      "candidateTemplates": [
+        "ARRAIGO SOCIAL",
+        "ARRAIGO SOCIOLABORAL",
+        "ARRAIGO SOCIOFORMATIVO",
+        "ARRAIGO FAMILIAR",
+        "ARRAIGO DE SEGUNDA OPORTUNIDAD",
+        "FORMAS DE REGULARIZARSE"
+      ],
+      "recommendationTemplates": [
+        "ARRAIGO SOCIAL"
+      ],
+      "message": "OK (ARRAIGO SOCIAL)"
+    },
+    {
+      "id": "arraigo-social-2",
+      "name": "Irregular 3 años, con oferta firmada",
+      "status": "passed",
+      "durationMs": 12940,
+      "flowCategory": "ARRAIGOS",
+      "candidateTemplates": [
+        "ARRAIGO SOCIAL",
+        "ARRAIGO SOCIOLABORAL",
+        "ARRAIGO SOCIOFORMATIVO",
+        "ARRAIGO FAMILIAR",
+        "ARRAIGO DE SEGUNDA OPORTUNIDAD",
+        "FORMAS DE REGULARIZARSE"
+      ],
+      "recommendationTemplates": [
+        "ARRAIGO SOCIAL"
+      ],
+      "message": "OK (ARRAIGO SOCIAL)"
+    },
+    {
+      "id": "arraigo-sociolaboral-1",
+      "name": "Irregular 2.5 años con denuncia laboral",
+      "status": "passed",
+      "durationMs": 16744,
+      "flowCategory": "ARRAIGOS",
+      "candidateTemplates": [
+        "ARRAIGO SOCIOLABORAL",
+        "ARRAIGO SOCIAL",
+        "ARRAIGO SOCIOFORMATIVO",
+        "ARRAIGO FAMILIAR",
+        "ARRAIGO DE SEGUNDA OPORTUNIDAD",
+        "FORMAS DE REGULARIZARSE"
+      ],
+      "recommendationTemplates": [
+        "ARRAIGO SOCIOLABORAL"
+      ],
+      "message": "OK (ARRAIGO SOCIOLABORAL)"
+    },
+    {
+      "id": "arraigo-sociolaboral-2",
+      "name": "Irregular 2 años, sentencia a favor",
+      "status": "passed",
+      "durationMs": 13233,
+      "flowCategory": "ARRAIGOS",
+      "candidateTemplates": [
+        "ARRAIGO SOCIOLABORAL",
+        "ARRAIGO SOCIAL",
+        "ARRAIGO SOCIOFORMATIVO",
+        "ARRAIGO FAMILIAR",
+        "ARRAIGO DE SEGUNDA OPORTUNIDAD",
+        "FORMAS DE REGULARIZARSE"
+      ],
+      "recommendationTemplates": [
+        "ARRAIGO SOCIOLABORAL"
+      ],
+      "message": "OK (ARRAIGO SOCIOLABORAL)"
+    },
+    {
+      "id": "arraigo-socioformativo-1",
+      "name": "Irregular 2+ años con preinscripción 600h",
+      "status": "passed",
+      "durationMs": 14703,
+      "flowCategory": "ARRAIGOS",
+      "candidateTemplates": [
+        "ARRAIGO SOCIOFORMATIVO",
+        "ARRAIGO SOCIAL",
+        "ARRAIGO SOCIOLABORAL",
+        "ARRAIGO FAMILIAR",
+        "ARRAIGO DE SEGUNDA OPORTUNIDAD",
+        "FORMAS DE REGULARIZARSE"
+      ],
+      "recommendationTemplates": [
+        "ARRAIGO SOCIOFORMATIVO"
+      ],
+      "message": "OK (ARRAIGO SOCIOFORMATIVO)"
+    },
+    {
+      "id": "arraigo-socioformativo-2",
+      "name": "Irregular 2.2 años, FP superior confirmado",
+      "status": "passed",
+      "durationMs": 11183,
+      "flowCategory": "ARRAIGOS",
+      "candidateTemplates": [
+        "ARRAIGO SOCIOFORMATIVO",
+        "ARRAIGO SOCIAL",
+        "ARRAIGO SOCIOLABORAL",
+        "ARRAIGO FAMILIAR",
+        "ARRAIGO DE SEGUNDA OPORTUNIDAD",
+        "FORMAS DE REGULARIZARSE"
+      ],
+      "recommendationTemplates": [
+        "ARRAIGO SOCIOFORMATIVO"
+      ],
+      "message": "OK (ARRAIGO SOCIOFORMATIVO)"
+    },
+    {
+      "id": "arraigo-familiar-hijo-1",
+      "name": "Padre/madre de hijo español",
+      "status": "passed",
+      "durationMs": 10917,
+      "flowCategory": "FAMILY_OF_EU",
+      "candidateTemplates": [
+        "ARRAIGO FAMILIAR",
+        "HIJO DE ESPAÑOL DE ORIGEN",
+        "REAGRUPACIÓN FAMILIAR",
+        "ESTAR A CARGO",
+        "FAMILIARES DE CIUDADANOS CON NACIONALIDAD ESPAÑOLA",
+        "RESIDENCIA INDEPENDIENTE"
+      ],
+      "recommendationTemplates": [
+        "ARRAIGO FAMILIAR"
+      ],
+      "message": "OK (ARRAIGO FAMILIAR)"
+    },
+    {
+      "id": "arraigo-familiar-hijo-2",
+      "name": "Madre irregular, hijo español recién nacido",
+      "status": "passed",
+      "durationMs": 9814,
+      "flowCategory": "FAMILY_OF_EU",
+      "candidateTemplates": [
+        "ARRAIGO FAMILIAR",
+        "HIJO DE ESPAÑOL DE ORIGEN",
+        "REAGRUPACIÓN FAMILIAR",
+        "ESTAR A CARGO",
+        "FAMILIARES DE CIUDADANOS CON NACIONALIDAD ESPAÑOLA",
+        "RESIDENCIA INDEPENDIENTE"
+      ],
+      "recommendationTemplates": [
+        "ARRAIGO FAMILIAR"
+      ],
+      "message": "OK (ARRAIGO FAMILIAR)"
+    },
+    {
+      "id": "familiar-ue-pareja-1",
+      "name": "Pareja no registrada de español/UE",
+      "status": "passed",
+      "durationMs": 17493,
+      "flowCategory": "FAMILY_OF_EU",
+      "candidateTemplates": [
+        "PAREJA DE HECHO",
+        "FAMILIAR UE 2025",
+        "ARRAIGO FAMILIAR",
+        "TRABAJAR CON RESIDENCIA DE FAMILIAR DE CIUDADANO DE LA UE EN TRÁMITE",
+        "RESIDENCIA INDEPENDIENTE",
+        "HIJO DE ESPAÑOL DE ORIGEN",
+        "ESTAR A CARGO",
+        "FAMILIARES DE CIUDADANOS CON NACIONALIDAD ESPAÑOLA",
+        "REAGRUPACIÓN FAMILIAR"
+      ],
+      "recommendationTemplates": [
+        "PAREJA DE HECHO"
+      ],
+      "message": "OK (PAREJA DE HECHO)"
+    },
+    {
+      "id": "familiar-ue-pareja-2",
+      "name": "Cónyuge español, recién casados",
+      "status": "passed",
+      "durationMs": 13955,
+      "flowCategory": "FAMILY_OF_EU",
+      "candidateTemplates": [
+        "FAMILIAR UE 2025",
+        "PAREJA DE HECHO",
+        "ARRAIGO FAMILIAR",
+        "TRABAJAR CON RESIDENCIA DE FAMILIAR DE CIUDADANO DE LA UE EN TRÁMITE",
+        "RESIDENCIA INDEPENDIENTE",
+        "HIJO DE ESPAÑOL DE ORIGEN",
+        "ESTAR A CARGO",
+        "FAMILIARES DE CIUDADANOS CON NACIONALIDAD ESPAÑOLA",
+        "REAGRUPACIÓN FAMILIAR"
+      ],
+      "recommendationTemplates": [
+        "FAMILIAR UE 2025"
+      ],
+      "message": "OK (FAMILIAR UE 2025)"
+    },
+    {
+      "id": "reagrupacion-familiar-1",
+      "name": "Residente reagrupar cónyuge e hijos",
+      "status": "passed",
+      "durationMs": 15470,
+      "flowCategory": "RESIDENT",
+      "candidateTemplates": [
+        "REAGRUPACIÓN FAMILIAR",
+        "NACIONALIDAD 2024",
+        "RESIDENCIA INDEPENDIENTE",
+        "PUEDO TRABAJAR CON LA RESIDENCIA EN TRÁMITE",
+        "CUE 2025"
+      ],
+      "recommendationTemplates": [
+        "REAGRUPACIÓN FAMILIAR"
+      ],
+      "message": "OK (REAGRUPACIÓN FAMILIAR)"
+    },
+    {
+      "id": "reagrupacion-familiar-2",
+      "name": "Residente reagrupar padres mayores",
+      "status": "passed",
+      "durationMs": 10373,
+      "flowCategory": "RESIDENT",
+      "candidateTemplates": [
+        "REAGRUPACIÓN FAMILIAR",
+        "NACIONALIDAD 2024",
+        "RESIDENCIA INDEPENDIENTE",
+        "PUEDO TRABAJAR CON LA RESIDENCIA EN TRÁMITE",
+        "CUE 2025"
+      ],
+      "recommendationTemplates": [
+        "REAGRUPACIÓN FAMILIAR"
+      ],
+      "message": "OK (REAGRUPACIÓN FAMILIAR)"
+    },
+    {
+      "id": "nacionalidad-matrimonio-1",
+      "name": "Residente casado con española (1+ año)",
+      "status": "passed",
+      "durationMs": 17390,
+      "flowCategory": "FAMILY_OF_EU",
+      "candidateTemplates": [
+        "NACIONALIDAD POR MATRIMONIO",
+        "NACIONALIDAD 2024",
+        "FAMILIAR UE 2025",
+        "ARRAIGO FAMILIAR"
+      ],
+      "recommendationTemplates": [
+        "NACIONALIDAD POR MATRIMONIO",
+        "NACIONALIDAD POR MATRIMONIO"
+      ],
+      "message": "OK (NACIONALIDAD POR MATRIMONIO)"
+    },
+    {
+      "id": "nacionalidad-residencia-2",
+      "name": "Latinoamericana 2 años residente legal",
+      "status": "passed",
+      "durationMs": 10069,
+      "flowCategory": "RESIDENT",
+      "candidateTemplates": [
+        "NACIONALIDAD 2024",
+        "REAGRUPACIÓN FAMILIAR",
+        "RESIDENCIA INDEPENDIENTE",
+        "PUEDO TRABAJAR CON LA RESIDENCIA EN TRÁMITE",
+        "CUE 2025"
+      ],
+      "recommendationTemplates": [
+        "NACIONALIDAD 2024"
+      ],
+      "message": "OK (NACIONALIDAD 2024)"
+    },
+    {
+      "id": "estudiar-desde-origen-1",
+      "name": "Visado de estudios máster desde origen",
+      "status": "passed",
+      "durationMs": 12235,
+      "flowCategory": "OUTSIDE_SPAIN",
+      "candidateTemplates": [
+        "ESTUDIAR EN ESPAÑA",
+        "EMIGRAR SIN PASAPORTE EUROPEO",
+        "ENTRAR COMO TURISTA"
+      ],
+      "recommendationTemplates": [
+        "ESTUDIAR EN ESPAÑA"
+      ],
+      "message": "OK (ESTUDIAR EN ESPAÑA)"
+    },
+    {
+      "id": "estudiar-desde-origen-2",
+      "name": "Preinscripción FP desde origen",
+      "status": "passed",
+      "durationMs": 13422,
+      "flowCategory": "OUTSIDE_SPAIN",
+      "candidateTemplates": [
+        "ESTUDIAR EN ESPAÑA",
+        "EMIGRAR SIN PASAPORTE EUROPEO",
+        "ENTRAR COMO TURISTA"
+      ],
+      "recommendationTemplates": [
+        "ESTUDIAR EN ESPAÑA"
+      ],
+      "message": "OK (ESTUDIAR EN ESPAÑA)"
+    },
+    {
+      "id": "modificar-estudios-a-ajena-1",
+      "name": "Estudiante con oferta de trabajo",
+      "status": "passed",
+      "durationMs": 14556,
+      "flowCategory": "STUDENT",
+      "candidateTemplates": [
+        "MODIFICAR DE ESTUDIOS A CUENTA AJENA",
+        "MODIFICAR DE ESTUDIOS A CUENTA PROPIA"
+      ],
+      "recommendationTemplates": [
+        "MODIFICAR DE ESTUDIOS A CUENTA AJENA"
+      ],
+      "message": "OK (MODIFICAR DE ESTUDIOS A CUENTA AJENA)"
+    },
+    {
+      "id": "modificar-estudios-a-ajena-2",
+      "name": "Graduada máster con contrato firmado",
+      "status": "passed",
+      "durationMs": 12102,
+      "flowCategory": "STUDENT",
+      "candidateTemplates": [
+        "MODIFICAR DE ESTUDIOS A CUENTA AJENA"
+      ],
+      "recommendationTemplates": [
+        "MODIFICAR DE ESTUDIOS A CUENTA AJENA"
+      ],
+      "message": "OK (MODIFICAR DE ESTUDIOS A CUENTA AJENA)"
+    },
+    {
+      "id": "renovacion-estudiante-1",
+      "name": "Renovación tarjeta estudiante grado",
+      "status": "passed",
+      "durationMs": 12443,
+      "flowCategory": "STUDENT",
+      "candidateTemplates": [
+        "RENOVACIÓN DE ESTUDIOS"
+      ],
+      "recommendationTemplates": [
+        "RENOVACIÓN DE ESTUDIOS"
+      ],
+      "message": "OK (RENOVACIÓN DE ESTUDIOS)"
+    },
+    {
+      "id": "renovacion-estudiante-2",
+      "name": "Renovación FP con prácticas",
+      "status": "passed",
+      "durationMs": 10756,
+      "flowCategory": "STUDENT",
+      "candidateTemplates": [
+        "RENOVACIÓN DE ESTUDIOS"
+      ],
+      "recommendationTemplates": [
+        "RENOVACIÓN DE ESTUDIOS"
+      ],
+      "message": "OK (RENOVACIÓN DE ESTUDIOS)"
+    },
+    {
+      "id": "hq-worker-1",
+      "name": "Profesional altamente cualificado 70k",
+      "status": "passed",
+      "durationMs": 12538,
+      "flowCategory": "OUTSIDE_SPAIN",
+      "candidateTemplates": [
+        "RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO",
+        "EMIGRAR SIN PASAPORTE EUROPEO",
+        "ENTRAR COMO TURISTA"
+      ],
+      "recommendationTemplates": [
+        "RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO"
+      ],
+      "message": "OK (RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO)"
+    },
+    {
+      "id": "hq-worker-2",
+      "name": "Directiva financiera 90k con familia",
+      "status": "passed",
+      "durationMs": 13401,
+      "flowCategory": "OUTSIDE_SPAIN",
+      "candidateTemplates": [
+        "RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO",
+        "EMIGRAR SIN PASAPORTE EUROPEO",
+        "ENTRAR COMO TURISTA"
+      ],
+      "recommendationTemplates": [
+        "RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO"
+      ],
+      "message": "OK (RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO)"
+    },
+    {
+      "id": "investor-1",
+      "name": "Compra vivienda 650k",
+      "status": "passed",
+      "durationMs": 13606,
+      "flowCategory": "OUTSIDE_SPAIN",
+      "candidateTemplates": [
+        "RESIDENCIA PARA INVERSORES",
+        "EMIGRAR SIN PASAPORTE EUROPEO",
+        "ENTRAR COMO TURISTA"
+      ],
+      "recommendationTemplates": [
+        "RESIDENCIA PARA INVERSORES"
+      ],
+      "message": "OK (RESIDENCIA PARA INVERSORES)"
+    },
+    {
+      "id": "investor-2",
+      "name": "Bono público 1M€",
+      "status": "passed",
+      "durationMs": 8782,
+      "flowCategory": "OUTSIDE_SPAIN",
+      "candidateTemplates": [
+        "RESIDENCIA PARA INVERSORES",
+        "EMIGRAR SIN PASAPORTE EUROPEO",
+        "ENTRAR COMO TURISTA"
+      ],
+      "recommendationTemplates": [
+        "RESIDENCIA PARA INVERSORES"
+      ],
+      "message": "OK (RESIDENCIA PARA INVERSORES)"
+    },
+    {
+      "id": "nomada-digital-1",
+      "name": "Trabajo remoto con contrato extranjero",
+      "status": "passed",
+      "durationMs": 12467,
+      "flowCategory": "OUTSIDE_SPAIN",
+      "candidateTemplates": [
+        "NÓMADA DIGITAL",
+        "EMIGRAR SIN PASAPORTE EUROPEO",
+        "ENTRAR COMO TURISTA"
+      ],
+      "recommendationTemplates": [
+        "NÓMADA DIGITAL"
+      ],
+      "message": "OK (NÓMADA DIGITAL)"
+    },
+    {
+      "id": "nomada-digital-2",
+      "name": "Freelance facturación 4k remoto",
+      "status": "passed",
+      "durationMs": 12918,
+      "flowCategory": "OUTSIDE_SPAIN",
+      "candidateTemplates": [
+        "NÓMADA DIGITAL",
+        "EMIGRAR SIN PASAPORTE EUROPEO",
+        "ENTRAR COMO TURISTA"
+      ],
+      "recommendationTemplates": [
+        "NÓMADA DIGITAL"
+      ],
+      "message": "OK (NÓMADA DIGITAL)"
+    },
+    {
+      "id": "emprender-1",
+      "name": "Plan de negocio cafetería",
+      "status": "passed",
+      "durationMs": 11759,
+      "flowCategory": "OUTSIDE_SPAIN",
+      "candidateTemplates": [
+        "EMPRENDER EN ESPAÑA",
+        "EMIGRAR SIN PASAPORTE EUROPEO",
+        "ENTRAR COMO TURISTA"
+      ],
+      "recommendationTemplates": [
+        "EMPRENDER EN ESPAÑA"
+      ],
+      "message": "OK (EMPRENDER EN ESPAÑA)"
+    },
+    {
+      "id": "emprender-2",
+      "name": "Startup tecnológica con inversión semilla",
+      "status": "failed",
+      "durationMs": 13838,
+      "flowCategory": "OUTSIDE_SPAIN",
+      "candidateTemplates": [
+        "RESIDENCIA PARA INVERSORES",
+        "EMPRENDER EN ESPAÑA",
+        "EMIGRAR SIN PASAPORTE EUROPEO",
+        "ENTRAR COMO TURISTA"
+      ],
+      "recommendationTemplates": [
+        "RESIDENCIA PARA INVERSORES"
+      ],
+      "message": "Esperaba EMPRENDER EN ESPAÑA, recibido RESIDENCIA PARA INVERSORES"
+    },
+    {
+      "id": "asilo-1",
+      "name": "Solicitante de asilo político",
+      "status": "passed",
+      "durationMs": 9065,
+      "flowCategory": "ASYLUM",
+      "candidateTemplates": [
+        "ASILO",
+        "FORMAS DE REGULARIZARSE"
+      ],
+      "recommendationTemplates": [
+        "ASILO"
+      ],
+      "message": "OK (ASILO)"
+    },
+    {
+      "id": "asilo-2",
+      "name": "Asilo por persecución LGTBI",
+      "status": "passed",
+      "durationMs": 6622,
+      "flowCategory": "ASYLUM",
+      "candidateTemplates": [
+        "ASILO",
+        "FORMAS DE REGULARIZARSE"
+      ],
+      "recommendationTemplates": [
+        "ASILO"
+      ],
+      "message": "OK (ASILO)"
+    }
+  ]
+}
