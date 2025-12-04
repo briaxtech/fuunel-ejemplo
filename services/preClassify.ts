@@ -95,8 +95,12 @@ const extractGoal = (comments: string): string => {
   return '';
 };
 
-const containsAny = (text: string, needles: string[]) =>
-  needles.some((n) => text.includes(n));
+const containsAny = (text: string, needles: string[]) => {
+  return needles.some((n) => {
+    const pattern = new RegExp(`\\b${n}\\b`, 'i');
+    return pattern.test(text);
+  });
+};
 
 const stripAccents = (text: string) =>
   text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -604,8 +608,8 @@ export const preClassify = (profile: UserProfile): PreClassification => {
     if (flags.isIrregular || goal === 'regularize') {
       result.flowCategory = 'ARRAIGOS';
       const base: string[] = [
-        'ARRAIGO SOCIAL',          // Ahora es base, porque pide 2 años
-        'ARRAIGO SOCIOFORMATIVO',  // Ahora es base, porque pide 2 años
+        'ARRAIGO SOCIAL',
+        'ARRAIGO SOCIOFORMATIVO',
         'ARRAIGO FAMILIAR',
         'ARRAIGO DE SEGUNDA OPORTUNIDAD',
         'FORMAS DE REGULARIZARSE',
@@ -615,52 +619,38 @@ export const preClassify = (profile: UserProfile): PreClassification => {
         base.unshift('RECURSO CONTENCIOSO');
       }
 
-      // LÓGICA DE TIEMPO ACTUALIZADA (2 AÑOS)
-      // Usamos tu función auxiliar timeToYears que ya existe en el archivo
+      // LÓGICA DE TIEMPO ACTUALIZADA
       const years = timeToYears(profile.timeInSpain);
-
-      // Si tiene MENOS de 2 años, quitamos los Arraigos que piden tiempo
-      // (Es más seguro quitar lo que no sirve que intentar adivinar lo que sí)
       let candidates = [...base];
-      
-      // LÓGICA DE TIEMPO ESTRICTA:
+
+      // FILTRO ESTRICTO DE AÑOS
       if (years < 1.9) {
-         // Menos de 2 años: No puede hacer ni Social ni Laboral
-         candidates = candidates.filter(t => 
-             t !== 'ARRAIGO SOCIAL' && 
-             t !== 'ARRAIGO SOCIOLABORAL'
-         );
+         // Menos de 2 años: No puede hacer Arraigo Social ni Laboral
+         candidates = candidates.filter(t => t !== 'ARRAIGO SOCIAL' && t !== 'ARRAIGO SOCIOLABORAL');
       } else if (years < 2.9) {
-         // Entre 2 y 3 años (Tu caso de 2.17): 
-         // PUEDE hacer Laboral, pero NO puede hacer Social (pide 3).
-         // Quitamos explícitamente Arraigo Social para no confundir a la IA.
+         // Entre 2 y 3 años (Caso de tu usuario: 2.16):
+         // Cumple para Formativo y Laboral, pero NO para Social (pide 3).
+         // Quitamos "ARRAIGO SOCIAL" para que la IA no se confunda.
          candidates = candidates.filter(t => t !== 'ARRAIGO SOCIAL');
       }
 
-            // Logica laboral existente (mantenla)
+      // Logica laboral
       const hasLaborEvidence =
         jobPlain.includes('denuncia') ||
         jobPlain.includes('inspecci') ||
         jobPlain.includes('sentencia') ||
         jobPlain.includes('nomina') ||
-        commentsPlain.includes('laboral');
+        commentsPlain.includes('laboral'); // OJO: 'informal' no suele activar esto en tu código actual
 
       if (hasLaborEvidence) {
-        // Si hay pruebas laborales, ponemos SOCIOLABORAL de primero y eliminamos formacion/social para evitar ruido
-        candidates = candidates.filter(t => t !== 'ARRAIGO SOCIOFORMATIVO'); // Opcional: limpiar opciones débiles
         candidates.unshift('ARRAIGO SOCIOLABORAL');
       }
 
-      // Ruta formativa clara: prioriza socioformativo y evita social
-      if (hasTrainingPath || goal === 'study') {
-        result.candidateTemplates = mapToTemplates(['ARRAIGO SOCIOFORMATIVO', 'FORMAS DE REGULARIZARSE']);
-        return result;
-      }
-
-      // Segunda oportunidad: perdida de residencia/tarjeta previa
-      if (commentsPlain.includes('perdi') && (commentsPlain.includes('residencia') || commentsPlain.includes('tarjeta'))) {
-        result.candidateTemplates = mapToTemplates(['ARRAIGO DE SEGUNDA OPORTUNIDAD', 'FORMAS DE REGULARIZARSE']);
-        return result;
+      // Priorizar formativo si no hay pruebas laborales fuertes
+      if (!hasLaborEvidence && years >= 1.9) {
+          // Ponemos Formativo al principio porque es la vía más segura para 2 años sin denuncia
+          candidates = candidates.filter(t => t !== 'ARRAIGO SOCIOFORMATIVO'); // Lo quitamos para volver a ponerlo al inicio
+          candidates.unshift('ARRAIGO SOCIOFORMATIVO');
       }
 
       result.candidateTemplates = mapToTemplates(candidates);
