@@ -103,6 +103,23 @@ export const formCases: AiTestCase[] = [
       mustInclude: ["ARRAIGO SOCIOFORMATIVO"],
     },
   },
+  {
+    id: "arraigo-social-legal-1",
+    name: "Irregular 2.15 años, quiere regularizar y luego nacionalidad",
+    tags: ["form", "arraigos", "regresion"],
+    profile: makeProfile({
+      currentStatus: ImmigrationStatus.IRREGULAR,
+      timeInSpain: TimeInSpain.TWO_TO_THREE_YEARS,
+      isEmpadronado: true,
+      jobSituation: "sin contrato",
+      comments:
+        "[objetivo:regularizar] Soy argentino, llevo 2.15 años en España, sin antecedentes. Quiero regularizarme y más adelante tramitar la nacionalidad.",
+    }),
+    expectation: {
+      expectedFlow: "ARRAIGOS",
+      mustInclude: ["ARRAIGO SOCIAL"],
+    },
+  },
 
   // ===== FAMILIA / UE =====
   {

@@ -11,6 +11,48 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
+const formatTimeRange = (time?: string): string => {
+  const raw = (time || "").toLowerCase();
+  if (!raw) return "No especificado";
+
+  const numeric = parseFloat(raw.replace(",", ".").replace(/[^0-9.]/g, ""));
+  const mapByNumeric = (value: number) => {
+    if (value >= 3) return "Más de 3 años";
+    if (value >= 2) return "Entre 2 y 3 años";
+    if (value >= 1) return "Entre 1 y 2 años";
+    if (value >= 0.5) return "Entre 6 y 12 meses";
+    return "Menos de 6 meses";
+  };
+
+  if (raw.includes("more_than_three") || raw.includes("mas de 3") || raw.includes("más de 3")) {
+    return "Más de 3 años";
+  }
+  if (raw.includes("two_to_three") || raw.includes("2 a 3") || raw.includes("2-3")) {
+    return "Entre 2 y 3 años";
+  }
+  if (raw.includes("one_to_two") || raw.includes("1 a 2") || raw.includes("1-2")) {
+    return "Entre 1 y 2 años";
+  }
+  if (raw.includes("six_to_twelve") || raw.includes("6") || raw.includes("twelve")) {
+    return "Entre 6 y 12 meses";
+  }
+  if (raw.includes("less_than") || raw.includes("<") || raw.includes("menos de")) {
+    return "Menos de 6 meses";
+  }
+  if (!Number.isNaN(numeric)) {
+    return mapByNumeric(numeric);
+  }
+  return "No especificado";
+};
+
+const replaceDecimalYears = (text: string | undefined): string | undefined => {
+  if (!text) return text;
+  return text.replace(/(\d+[.,]\d+)\s*a(?:ñ|n)os?/gi, (_, num) => {
+    const n = parseFloat(String(num).replace(",", "."));
+    return formatTimeRange(String(Number.isNaN(n) ? num : n));
+  });
+};
+
 // 1. LISTA NEGRA: Templates administrativos que la IA TIENE PROHIBIDO elegir.
 // Si el usuario quiere esto, la IA derivarÃ¡ a 'REVISION_MANUAL'.
 const EXCLUDED_ADMIN_TEMPLATES = [
@@ -124,6 +166,7 @@ export const analyzeImmigrationProfile = async (
   profile: UserProfile,
 ): Promise<AIAnalysisResult> => {
   const pre = preClassify(profile);
+  const timeDisplay = formatTimeRange(profile.timeInSpain);
   
   // 1. FILTRO DE SEGURIDAD: quitamos administrativos y añadimos fallback manual
   const rawCandidates = Array.from(new Set([
@@ -145,7 +188,7 @@ export const analyzeImmigrationProfile = async (
 
     PERFIL:
     - Nacionalidad: ${profile.nationality}
-    - Tiempo Espana: ${profile.timeInSpain} (${profile.entryDate || "?"})
+    - Tiempo en España: ${timeDisplay} (${profile.entryDate || "sin fecha"})
     - Estatus: ${profile.currentStatus}
     - Penales: ${profile.hasCriminalRecord ? "SI" : "No"}
     - Familia: ${profile.hasFamilyInSpain ? "SI" : "No"} (${profile.familyNationality}, ${profile.familyRelation})
@@ -164,6 +207,8 @@ export const analyzeImmigrationProfile = async (
        - Si tiene antecedentes -> "${MANUAL_REVIEW_KEY}" (Requiere revision de abogado).
     3. CASOS COMPLEJOS:
        - Si dudas o la informacion es contradictoria, usa "${MANUAL_REVIEW_KEY}".
+    4. FORMATO DE TIEMPO EN ESPAÑA:
+       - NUNCA uses decimales (ej: "2.15 años"). Usa rangos: "Menos de 6 meses", "Entre 1 y 2 años", "Entre 2 y 3 años", "Más de 3 años".
 
     TU TAREA:
     Analiza el perfil. Si es un tramite legal claro y cumple requisitos, elige el template.
@@ -226,7 +271,14 @@ export const analyzeImmigrationProfile = async (
       return parsed;
     }
 
-    return sanitizeRecommendations(parsed);
+    const normalized = sanitizeRecommendations(parsed);
+    if (normalized.legalAnalysis) {
+      const fixedTime = replaceDecimalYears(`Tiempo en España: ${timeDisplay}`) || `Tiempo en España: ${timeDisplay}`;
+      normalized.legalAnalysis.timeCheck = fixedTime;
+    }
+    normalized.summary = replaceDecimalYears(normalized.summary);
+    normalized.criticalAdvice = replaceDecimalYears(normalized.criticalAdvice);
+    return normalized;
 
   } catch (error) {
     console.error("AI Error:", error);
