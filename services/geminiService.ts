@@ -1,6 +1,5 @@
 ﻿import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { UserProfile, AIAnalysisResult, NextStepAction } from "../types";
-import { TEMPLATE_SUMMARY_MAP, TEMPLATE_KEYS } from "./templates";
 import { preClassify } from "./preClassify";
 
 const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
@@ -61,7 +60,7 @@ const coerceNextStep = (action?: string): NextStepAction => {
 };
 
 // 1. LISTA NEGRA: Templates administrativos que la IA TIENE PROHIBIDO elegir.
-// Si el usuario quiere esto, la IA derivarÃ¡ a 'REVISION_MANUAL'.
+// Si el usuario quiere esto, la IA derivará a 'REVISION_MANUAL'.
 const EXCLUDED_ADMIN_TEMPLATES = [
   "AGENDAR CITA", 
   "CITA AGENDADA",
@@ -74,7 +73,7 @@ const EXCLUDED_ADMIN_TEMPLATES = [
   "CUENTA BREVEMENTE"
 ];
 
-const MANUAL_REVIEW_KEY = "REVISION_MANUAL";
+const MANUAL_REVIEW_KEY = null;
 
 // 2. REGLAS LEGALES ACTUALIZADAS
 const TEMPLATE_RULES: Record<string, string> = {
@@ -229,7 +228,7 @@ export const analyzeImmigrationProfile = async (
 
     3. PRIORIDAD LABORAL:
        - Si lleva > 2 años Y menciona trabajo/jefe/despido/negro/irregular -> EL TRAMITE ES "ARRAIGO SOCIOLABORAL". Priorízalo sobre cualquier otro.
-       
+
     4. REGLA DE LA OFERTA DE TRABAJO:
        - Si jobSituation es "oferta" o el usuario dice "tengo oferta" -> La prioridad #1 es "ARRAIGO SOCIAL" (si cumple >2 años).
        - Diferéncialo de "Trabajo irregular" (que apunta a Sociolaboral).
