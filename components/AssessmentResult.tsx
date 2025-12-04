@@ -52,6 +52,8 @@ export const AssessmentResult: React.FC<AssessmentResultProps> = ({ result, prof
           phone: result.nextStepAction === NextStepAction.SCHEDULE_CONSULTATION ? contactForm.phone : undefined,
         },
         action: result.nextStepAction,
+        summaryPreview: result.summary,
+        referenceCode: refCode,
         timestamp: new Date().toISOString(),
       });
       setSubmitted(true);

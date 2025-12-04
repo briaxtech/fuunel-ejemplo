@@ -9,6 +9,8 @@ export interface WebhookPayload {
   analysis: AIAnalysisResult;
   contact: ContactInfo;
   action: string;
+  summaryPreview: string;
+  referenceCode?: string;
   timestamp: string;
 }
 

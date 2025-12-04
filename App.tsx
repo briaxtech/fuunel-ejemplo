@@ -29,6 +29,8 @@ const App: React.FC = () => {
         analysis,
         contact: contactInfo,
         action: analysis.nextStepAction,
+        summaryPreview: analysis.summary,
+        referenceCode: undefined,
         timestamp: new Date().toISOString(),
       });
       clearDraft();
