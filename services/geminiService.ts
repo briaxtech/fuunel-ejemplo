@@ -1,6 +1,4 @@
-// geminiService.ts
-
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+﻿import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { UserProfile, AIAnalysisResult } from "../types";
 import { TEMPLATE_SUMMARY_MAP, TEMPLATE_KEYS } from "./templates";
 import { preClassify } from "./preClassify";
@@ -13,304 +11,225 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
+// 1. LISTA NEGRA: Templates administrativos que la IA TIENE PROHIBIDO elegir.
+// Si el usuario quiere esto, la IA derivarÃ¡ a 'REVISION_MANUAL'.
+const EXCLUDED_ADMIN_TEMPLATES = [
+  "AGENDAR CITA", 
+  "CITA AGENDADA",
+  "PEDIDO PAGO", 
+  "PRIMER PAGO NACIONALIDAD (UN EXPEDIENTE)", 
+  "PRIMER PAGO NACIONALIDAD (VARIOS EXPEDIENTES)",
+  "CLIENES", 
+  "GESTOR DE CONFIANZA", 
+  "REMITIR A JULIA", 
+  "CUENTA BREVEMENTE"
+];
+
+const MANUAL_REVIEW_KEY = "REVISION_MANUAL";
+
+// 2. REGLAS LEGALES ACTUALIZADAS
+const TEMPLATE_RULES: Record<string, string> = {
+  // --- SALIDA DE EMERGENCIA ---
+  [MANUAL_REVIEW_KEY]:
+    "REQUIERE: El usuario quiere AGENDAR CITA, realizar PAGOS, es un cliente recurrente, o su caso es tan complejo que requiere decision humana directa. Usalo tambien si NINGUN otro template encaja.",
+
+  // --- ARRAIGOS (2 ANOS) ---
+  "ARRAIGO SOCIAL":
+    "REQUIERE: >=2 anos permanencia + Oferta empleo/Medios propios + Sin penales.",
+  "ARRAIGO SOCIOFORMATIVO":
+    "REQUIERE: >=2 anos permanencia + Compromiso formacion (600h/FP) + Sin penales.",
+  "ARRAIGO SOCIOLABORAL":
+    "REQUIERE: >=2 anos permanencia + Relacion laboral demostrable (denuncia/sentencia) + Sin penales.",
+  "ARRAIGO FAMILIAR":
+    "REQUIERE: Hijo de espanol de origen O Padre/Madre de menor espanol. (Diferente a Familiar UE).",
+  "ARRAIGO DE SEGUNDA OPORTUNIDAD":
+    "REQUIERE: Haber tenido residencia previa y haberla perdido.",
+
+  // --- ESTUDIOS ---
+  "ESTUDIAR EN ESPANA":
+    "REQUIERE: Estar FUERA o DENTRO como turista (<60 dias). Medios + Seguro + Matricula.",
+  "DESPUES DE ESTUDIOS": "REQUIERE: Estancia estudios vigente. Para modificar a trabajo.",
+  "MODIFICAR DE ESTUDIOS": "REQUIERE: Estancia estudios vigente.",
+  "RENOVACION DE ESTUDIOS": "REQUIERE: Haber aprobado curso anterior.",
+
+  // --- FAMILIARES ---
+  "FAMILIAR UE 2025":
+    "REQUIERE: Conyuge/pareja de ciudadano ESPANOL o UE. Si conviven en Espana, es la via principal.",
+  "FAMILIARES DE CIUDADANOS CON NACIONALIDAD ESPANOLA":
+    "REQUIERE: Familiar directo de espanol (ascendientes/descendientes a cargo). Para conyuge/pareja usa antes 'FAMILIAR UE 2025'.",
+  "PAREJA DE HECHO":
+    "REQUIERE: Convivencia (ej: 12 meses Madrid) + Empadronamiento conjunto + Solteria.",
+  "REAGRUPACION FAMILIAR":
+    "REQUIERE: Solicitante residente NO comunitario trae familia.",
+
+  // --- NACIONALIDAD ---
+  "NACIONALIDAD 2024":
+    "REQUIERE: Residencia legal (10 anos general, 2 Iberoamerica).",
+  "NACIONALIDAD POR MATRIMONIO":
+    "REQUIERE: 1 ano residencia legal casado con espanol.",
+  "LEY DE MEMORIA DEMOCRATICA (LMD)": "REQUIERE: Nieto/Bisnieto de espanol.",
+
+  // --- VISADOS / MOVILIDAD ---
+  "RESIDENCIA PARA INVERSORES":
+    "REQUIERE: Inversion >=500k en inmuebles o >=1M en bonos/acciones. Si cumple, recomiendalo.",
+  "NOMADA DIGITAL":
+    "REQUIERE: Trabajo remoto empresa extranjera + Titulo/3 anos exp + >2600 EUR.",
+  "RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO":
+    "REQUIERE: Oferta gran empresa + >50k.",
+  "EMPRENDER EN ESPANA": "REQUIERE: Plan innovador ENISA / emprendimiento real.",
+
+  // --- OTROS ---
+  "ASILO": "REQUIERE: Persecucion real. No usar por defecto.",
+  "HOMOLOGACION": "Solo para tramites de titulos.",
+  "FORMAS DE REGULARIZARSE": "Uso informativo general cuando no hay via clara.",
+};
+
 const buildAnalysisSchema = (allowedTemplateKeys: string[]): any => ({
   type: SchemaType.OBJECT,
   properties: {
-    summary: {
-      type: SchemaType.STRING,
-      description:
-        "Resumen breve y empatico de la situacion legal actual del usuario en Espana.",
+    legalAnalysis: {
+      type: SchemaType.OBJECT,
+      properties: {
+        timeCheck: { type: SchemaType.STRING, description: "CÃ¡lculo de aÃ±os y validaciÃ³n estricta." },
+        criminalRecordCheck: { type: SchemaType.BOOLEAN, description: "TRUE si bloquea el trÃ¡mite." },
+        intentCheck: { type: SchemaType.STRING, description: "Detecta si quiere: 'TRAMITE_LEGAL', 'PAGO', 'CITA', o 'CONSULTA_ADMINISTRATIVA'." }
+      },
+      required: ["timeCheck", "criminalRecordCheck", "intentCheck"]
     },
     recommendations: {
       type: SchemaType.ARRAY,
-      description: "Lista de tramites recomendados.",
       items: {
         type: SchemaType.OBJECT,
         properties: {
-          title: { type: SchemaType.STRING, description: "Nombre oficial del tramite." },
-          description: {
-            type: SchemaType.STRING,
-            description: "Explicacion de por que aplica este tramite.",
-          },
-          probability: {
-            type: SchemaType.STRING,
-            enum: ["Alta", "Media", "Baja"],
-            description: "Probabilidad estimada.",
-          },
-          templateKey: {
-            type: SchemaType.STRING,
-            enum: allowedTemplateKeys,
-            description:
-              "El template_key EXACTO del catalogo. No inventes nuevos valores.",
-          },
-          requirements: {
-            type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING },
-            description: "Requisitos legales clave.",
-          },
-          documents: {
-            type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING },
-            description: "Documentos fisicos necesarios.",
-          },
-          estimatedTime: {
-            type: SchemaType.STRING,
-            description: "Tiempo estimado de resolucion.",
-          },
+          title: { type: SchemaType.STRING },
+          description: { type: SchemaType.STRING },
+          probability: { type: SchemaType.STRING, enum: ["Alta", "Media", "Baja", "Nula"] },
+          templateKey: { type: SchemaType.STRING, enum: allowedTemplateKeys },
+          requirements: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          estimatedTime: { type: SchemaType.STRING },
         },
-        required: [
-          "title",
-          "description",
-          "probability",
-          "templateKey",
-          "requirements",
-          "documents",
-          "estimatedTime",
-        ],
+        required: ["title", "description", "probability", "templateKey"]
       },
     },
-    criticalAdvice: {
-      type: SchemaType.STRING,
-      description: "Consejo o advertencia legal importante.",
-    },
-    missingInfoWarning: {
-      type: SchemaType.STRING,
-      description:
-        "Menciona si falta informacion critica para dar un consejo preciso.",
-    },
-    nextStepAction: {
-      type: SchemaType.STRING,
-      enum: ["SCHEDULE_CONSULTATION", "GATHER_DOCUMENTS"],
-      description:
-        "Decision sobre el siguiente paso. Consulta si hay via clara, recolectar si faltan requisitos.",
-    },
-    actionReasoning: {
-      type: SchemaType.STRING,
-      description:
-        "Breve explicacion de por que se sugiere agendar o recolectar.",
-    },
+    summary: { type: SchemaType.STRING, description: "Resumen completo para la abogada." },
+    criticalAdvice: { type: SchemaType.STRING },
+    missingInfoWarning: { type: SchemaType.STRING },
+    nextStepAction: { type: SchemaType.STRING, enum: ["SCHEDULE_CONSULTATION", "GATHER_DOCUMENTS", "MANUAL_REVIEW"] },
+    actionReasoning: { type: SchemaType.STRING },
   },
-  required: [
-    "summary",
-    "recommendations",
-    "criticalAdvice",
-    "nextStepAction",
-    "actionReasoning",
-  ],
+  required: ["legalAnalysis", "recommendations", "summary", "criticalAdvice", "nextStepAction", "actionReasoning"],
 });
-
-const buildAllowedTemplates = (candidates: string[]) => {
-  const allowedSet = new Set(TEMPLATE_KEYS.map((k) => k.toUpperCase()));
-  const filtered = new Set<string>();
-
-  candidates.forEach((k) => {
-    if (allowedSet.has(k.toUpperCase())) filtered.add(k);
-  });
-
-  if (!filtered.size) {
-    TEMPLATE_KEYS.forEach((k) => filtered.add(k));
-  }
-
-  // No agregamos "SIN_PLANTILLA" por defecto para forzar una seleccion concreta
-  return Array.from(filtered);
-};
-
-const normalizeKey = (key?: string) => key?.trim().toUpperCase() || "";
-
-const pickPrimaryTemplate = (allowedTemplates: string[]) => {
-  const firstValid = allowedTemplates.find(
-    (t) => normalizeKey(t) !== "SIN_PLANTILLA",
-  );
-  return firstValid || allowedTemplates[0];
-};
-
-const ensureValidRecommendations = (
-  result: AIAnalysisResult,
-  allowedTemplates: string[],
-): AIAnalysisResult => {
-  const primaryTemplate = pickPrimaryTemplate(allowedTemplates);
-  const allowedNormalized = new Set(allowedTemplates.map(normalizeKey));
-
-  const fixTemplateKey = (key?: string) => {
-    const normalized = normalizeKey(key);
-    if (allowedNormalized.has(normalized) && normalized !== "SIN_PLANTILLA") {
-      // Devuelve la clave original preservando el casing
-      return (
-        allowedTemplates.find((t) => normalizeKey(t) === normalized) ||
-        primaryTemplate
-      );
-    }
-    return primaryTemplate;
-  };
-
-  const buildFallbackRecommendation = (templateKey: string) => ({
-    title: templateKey,
-    description: "Recomendacion prioritaria segun el perfil.",
-    probability: "Alta" as const,
-    templateKey,
-    requirements: [],
-    documents: [],
-    estimatedTime: "N/A",
-  });
-
-  const recommendations = (result.recommendations || []).map((rec, idx) => ({
-    ...rec,
-    templateKey: idx === 0 ? primaryTemplate : fixTemplateKey(rec.templateKey),
-  }));
-
-  const ensuredRecommendations = recommendations.length
-    ? recommendations
-    : [buildFallbackRecommendation(primaryTemplate)];
-
-  ensuredRecommendations[0].templateKey = primaryTemplate;
-
-  return {
-    ...result,
-    recommendations: ensuredRecommendations,
-  };
-};
 
 export const analyzeImmigrationProfile = async (
   profile: UserProfile,
 ): Promise<AIAnalysisResult> => {
   const pre = preClassify(profile);
-  const allowedTemplates = buildAllowedTemplates(pre.candidateTemplates || []);
+  
+  // 1. FILTRO DE SEGURIDAD: quitamos administrativos y añadimos fallback manual
+  const rawCandidates = Array.from(new Set([
+    ...(pre.candidateTemplates || []),
+    "FORMAS DE REGULARIZARSE",
+    MANUAL_REVIEW_KEY,
+  ]));
 
-  const subsetSummary = allowedTemplates
-    .filter((key) => key !== "SIN_PLANTILLA")
-    .map((key) => `- ${key}: ${TEMPLATE_SUMMARY_MAP[key] || ""}`)
-    .join("\n");
+  const allowedTemplates = rawCandidates.filter(key => !EXCLUDED_ADMIN_TEMPLATES.includes(key));
+
+  // 2. CONTEXTO PARA LA IA
+  const rulesContext = allowedTemplates.map(key => {
+    const ruleKey = Object.keys(TEMPLATE_RULES).find(k => key.includes(k)) || MANUAL_REVIEW_KEY;
+    return `- "${key}": ${TEMPLATE_RULES[ruleKey]}`;
+  }).join("\n");
 
   const prompt = `
-Actua como un ABOGADO SENIOR experto en Extranjeria e Inmigracion en Espana.
+    ACTUA COMO UN JUEZ DE EXTRANJERIA (FILTRO DE ENTRADA).
 
-Tu tarea es:
-1) Analizar el perfil del usuario con rigor legal.
-2) Seleccionar la plantilla MAS ESPECIFICA y correcta dentro de la lista permitida.
-3) Generar recomendaciones claras y accionables, ajustadas a la normativa vigente.
-4) Usar al maximo la informacion de TEXTO LIBRE (familyDetails y comments).
+    PERFIL:
+    - Nacionalidad: ${profile.nationality}
+    - Tiempo Espana: ${profile.timeInSpain} (${profile.entryDate || "?"})
+    - Estatus: ${profile.currentStatus}
+    - Penales: ${profile.hasCriminalRecord ? "SI" : "No"}
+    - Familia: ${profile.hasFamilyInSpain ? "SI" : "No"} (${profile.familyNationality}, ${profile.familyRelation})
+    - COMENTARIOS: "${profile.comments} ${profile.familyDetails}"
 
-REGLAS LEGALES INFLEXIBLES (RESUMEN):
-- Si el usuario esta FUERA de Espana (locationStatus = "origin"):
-  -> NO sugieras arraigos. En ese caso se trabaja con visados / opciones preparatorias.
-- Si esta IRREGULAR en Espana:
-  -> NO sugieras visados de consulado; prioriza vias de regularizacion (arraigo social, arraigo familiar, socioformativo, etc.).
-- Si NO hay matrimonio ni pareja registrada con espanol/UE:
-  -> NO sugieras directamente "familiar UE"; valora opciones informativas o preparatorias.
-- Si tiene HIJO espanol:
-  -> prioriza "Arraigo familiar" u otras figuras especificas de familiares de espanoles, segun plantillas.
-- Si tiene conyuge o pareja registrada espanol/UE y conviven en Espana:
-  -> prioriza regimen de familiar de ciudadano de la UE (tarjeta de familiar).
-- ARRAIGO SOCIAL / SOCIOFORMATIVO:
-  -> exige al menos 2 ANOS de permanencia continuada en Espana (no 3), segun el nuevo reglamento y las plantillas del catalogo.
-- Si no puedes determinar con claridad una via concreta:
-  -> elige una plantilla INFORMATIVA adecuada y explica la falta de datos en "missingInfoWarning".
+    OPCIONES VALIDAS (Templates Legales):
+    ${rulesContext}
 
-TEMPLATES PERMITIDOS PARA ESTE CASO:
-(usa SOLO uno de estos en cada recommendation.templateKey)
-${allowedTemplates.join(", ")}
+    INSTRUCCIONES CRITICAS (LISTA NEGRA):
+    1. SI EL USUARIO QUIERE PAGAR O AGENDAR CITA:
+       - NO enviar plantilla automatica.
+       - ACCION: Selecciona "${MANUAL_REVIEW_KEY}".
+       - En summary: "SOLICITUD ADMINISTRATIVA: Usuario desea pagar/agendar. Requiere gestion manual".
+    2. VALIDACION LEGAL:
+       - Si pide Arraigo pero lleva < 2 anos -> "${MANUAL_REVIEW_KEY}" o "FORMAS DE REGULARIZARSE" (No recomiendes Arraigo).
+       - Si tiene antecedentes -> "${MANUAL_REVIEW_KEY}" (Requiere revision de abogado).
+    3. CASOS COMPLEJOS:
+       - Si dudas o la informacion es contradictoria, usa "${MANUAL_REVIEW_KEY}".
 
-CONTEXTO DE PRECLASIFICACION:
-- Categoria de flujo: ${pre.flowCategory}
-- Plantillas candidatas:
-${subsetSummary}
-
-DATOS ESTRUCTURADOS DEL PERFIL:
-- Nombre: ${profile.firstName} ${profile.lastName}
-- Nacionalidad: ${profile.nationality}
-- Edad: ${profile.age ?? "No indicado"}
-- Nivel de estudios: ${profile.educationLevel}
-- Provincia de residencia: ${profile.province || "No indicado"}
-- Ubicacion actual: ${profile.locationStatus === "origin" ? "Pais de origen" : "Espana"}
-- Estatus actual: ${profile.currentStatus}
-- Tiempo declarado en Espana (formulario): ${profile.timeInSpain}
-- Fecha de entrada aproximada: ${profile.entryDate || "No indicado"}
-- Empadronado: ${profile.isEmpadronado === true
-      ? "Si"
-      : profile.isEmpadronado === false
-        ? "No"
-        : "No indicado"
-    }
-- Situacion laboral: ${profile.jobSituation || "No indicado"}
-- Antecedentes penales: ${profile.hasCriminalRecord === true
-      ? "Si"
-      : profile.hasCriminalRecord === false
-        ? "No"
-        : "No indicado"
-    }
-- Familia en Espana: ${profile.hasFamilyInSpain === true
-      ? `Si (Nacionalidad: ${profile.familyNationality || "No indicada"}, Vinculo: ${profile.familyRelation || "No indicado"
-      })`
-      : profile.hasFamilyInSpain === false
-        ? "No"
-        : "No indicado"
-    }
-- Objetivo principal (si viene en el perfil): ${profile.primaryGoal || "No indicado"}
-
-INFORMACION DE TEXTO LIBRE (MIRARLA SIEMPRE):
-1) Detalles familiares / convivencia / dependencia (familyDetails):
-${profile.familyDetails || "No proporcionado"}
-
-2) Comentarios y contexto adicional (comments):
-${profile.comments || "No proporcionado"}
-
-INSTRUCCIONES ESPECIALES SOBRE TEXTO LIBRE:
-- En "comments" pueden aparecer etiquetas como:
-  [objetivo:regularizar] [objetivo:entrada] [objetivo:familiares] [objetivo:nacionalidad]
-  Usalas como pista para entender el objetivo real del usuario.
-- Usa familyDetails para:
-  * Entender con quien vive realmente el usuario.
-  * Ver si depende economicamente de un familiar, o si alguien depende de el/ella.
-  * Confirmar convivencia efectiva con espanoles/UE, lo cual afecta a familiar UE y ciertas figuras de arraigo.
-- Si los datos estructurados y el texto libre se contradicen, explica brevemente la contradiccion en "missingInfoWarning".
-
-REGLAS DE SELECCION DE PLANTILLA:
-1. Si el caso es CLARO y ESPECIFICO -> elige la plantilla exacta que mejor encaje.
-2. NO uses "SIN_PLANTILLA" salvo que sea la unica opcion permitida.
-3. Prioriza plantillas ESPECIFICAS sobre GENERICAS (por ejemplo, "Arraigo familiar" antes que "Formas de regularizarse").
-4. Si la informacion es insuficiente o confusa:
-   -> elige una plantilla INFORMATIVA adecuada y usa "missingInfoWarning" para explicarlo.
-5. NO elijas nunca una plantilla solo porque sea la primera de la lista.
-
-SALIDA:
-Devuelve UNICAMENTE un JSON que cumpla EXACTAMENTE el schema dado
-(summary, recommendations, criticalAdvice, missingInfoWarning, nextStepAction, actionReasoning).
-No agregues campos extra fuera del schema.
+    TU TAREA:
+    Analiza el perfil. Si es un tramite legal claro y cumple requisitos, elige el template.
+    Si es Cita, Pago o no cumple requisitos duros, elige "${MANUAL_REVIEW_KEY}".
   `;
 
-  try {
-    const analysisSchema = buildAnalysisSchema(allowedTemplates);
+  const sanitizeRecommendations = (result: AIAnalysisResult) => {
+    const allowed = allowedTemplates.filter(k => k !== MANUAL_REVIEW_KEY);
+    const primary = allowed[0] || allowedTemplates[0] || MANUAL_REVIEW_KEY;
 
-    // Usar el SDK oficial @google/generative-ai con API key
+    const intent = (result as any)?.legalAnalysis?.intentCheck || "";
+    const hasAdminIntent = typeof intent === "string" && (intent.toUpperCase().includes("PAGO") || intent.toUpperCase().includes("CITA"));
+    const hasPenal = profile.hasCriminalRecord === true || (result as any)?.legalAnalysis?.criminalRecordCheck === true;
+
+    if (hasAdminIntent || hasPenal || primary === MANUAL_REVIEW_KEY) {
+      return result;
+    }
+
+    const normalizedAllowed = new Set(allowed.map(k => k.toUpperCase()));
+    const recs = (result.recommendations || []).map((rec, idx) => {
+      const normalized = (rec.templateKey || "").toUpperCase();
+      const mapped = normalizedAllowed.has(normalized) ? rec.templateKey : primary;
+      return { ...rec, templateKey: idx === 0 ? primary : mapped };
+    });
+
+    const ensured = recs.length > 0 ? recs : [{
+      title: primary,
+      description: "Recomendacion prioritaria segun el perfil.",
+      probability: "Alta",
+      templateKey: primary,
+      requirements: [],
+      estimatedTime: "N/A",
+    } as any];
+
+    const nextStep = result.nextStepAction === "MANUAL_REVIEW" ? "GATHER_DOCUMENTS" : result.nextStepAction;
+
+    return { ...result, recommendations: ensured, nextStepAction: nextStep };
+  };
+
+  try {
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
-        responseSchema: analysisSchema,
-        temperature: 0.1,
+        responseSchema: buildAnalysisSchema(allowedTemplates),
+        temperature: 0.0,
       },
-      systemInstruction:
-        "Eres un asistente legal experto en leyes de inmigracion de España. Se preciso, respeta las reglas indicadas y evita respuestas genericas.",
     });
 
     const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
+    const parsed = JSON.parse(result.response.text() || '{}');
 
-    if (!text) throw new Error("No response from AI");
-
-    const parsed = JSON.parse(text) as AIAnalysisResult;
-    return ensureValidRecommendations(parsed, allowedTemplates);
-  } catch (error) {
-    console.error("Error analysing profile:", error);
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
+    // Post-procesamiento: si hay intencion administrativa clara, forzar manual
+    const intentCheck = (parsed as any)?.legalAnalysis?.intentCheck || "";
+    if (typeof intentCheck === "string" && (intentCheck.includes("PAGO") || intentCheck.includes("CITA"))) {
+      if (parsed.recommendations && parsed.recommendations[0]) {
+        parsed.recommendations[0].templateKey = MANUAL_REVIEW_KEY;
+      }
+      parsed.nextStepAction = "MANUAL_REVIEW";
+      return parsed;
     }
-    console.error("Profile data:", JSON.stringify(profile, null, 2));
-    console.error("Allowed templates:", allowedTemplates);
-    throw new Error(
-      "Hubo un error al analizar el perfil. Por favor intenta de nuevo.",
-    );
+
+    return sanitizeRecommendations(parsed);
+
+  } catch (error) {
+    console.error("AI Error:", error);
+    throw error;
   }
 };

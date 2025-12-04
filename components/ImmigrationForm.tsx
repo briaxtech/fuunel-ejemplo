@@ -697,13 +697,27 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
 
 
   const handleSubmit = (e: React.FormEvent) => {
-
     e.preventDefault();
+
+    // --- NUEVO: CÁLCULO EXACTO DE TIEMPO PARA LA IA ---
+    let timeContext = "";
+    if (formData.entryDate) {
+      const entry = new Date(formData.entryDate);
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - entry.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffYears = (diffDays / 365.25).toFixed(2); // Ej: "2.15 años"
+
+      timeContext = `[SISTEMA: El usuario lleva exactamente ${diffYears} años (${diffDays} días) en España. Usar este dato para validar requisitos de 2 años.]`;
+    }
+    // ---------------------------------------------------
 
     const combinedComments = combineComments(customComment, intentTags);
 
-    onSubmit({ ...formData, comments: combinedComments }, contactData);
+    // Inyectamos el cálculo al principio de los comentarios
+    const finalComments = `${timeContext} \n ${combinedComments}`;
 
+    onSubmit({ ...formData, comments: finalComments }, contactData);
   };
 
 

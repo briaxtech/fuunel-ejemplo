@@ -130,6 +130,22 @@ export const preClassify = (profile: UserProfile): PreClassification => {
             ? 'regularize'
             : '');
 
+  // Señales de ruta formativa (para socioformativo)
+  const hasTrainingPath =
+    commentsPlain.includes('formacion') ||
+    commentsPlain.includes('curso') ||
+    commentsPlain.includes('600h') ||
+    commentsPlain.includes('600 h') ||
+    commentsPlain.includes('fp') ||
+    commentsPlain.includes('socioformativo') ||
+    commentsPlain.includes('preinscripcion') ||
+    commentsPlain.includes('estudiar') ||
+    commentsPlain.includes('estudios') ||
+    commentsPlain.includes('master') ||
+    commentsPlain.includes('grado') ||
+    commentsPlain.includes('aprender') ||
+    jobPlain.includes('curso');
+
   // Exploratory detection
   const isExploratory = () => {
     if (hasFamily) return false;
@@ -178,7 +194,7 @@ export const preClassify = (profile: UserProfile): PreClassification => {
   // Actas / certificates search
   const isActas = containsAny(commentsPlain, ['acta', 'actas', 'partida', 'registro']);
   if (isActas) {
-    result.flowCategory = 'ACTAS';
+    result.flowCategory = inSpain ? 'ACTAS' : 'OUTSIDE_SPAIN';
     result.candidateTemplates = mapToTemplates([
       'BUSQUEDA DE ACTAS',
       'LEY DE MEMORIA DEMOCRATICA (LMD)',
@@ -189,10 +205,12 @@ export const preClassify = (profile: UserProfile): PreClassification => {
   // Work while residence pending (comunitario)
   const asksWorkInProcess = containsAny(commentsPlain, ['residencia en tramite', 'resguardo', 'puedo trabajar', 'trabajar mientras']);
   if (asksWorkInProcess) {
-    result.flowCategory = 'WORK_PENDING';
+    result.flowCategory = flags.isResident ? 'RESIDENT' : 'WORK_PENDING';
     result.candidateTemplates = mapToTemplates([
       'TRABAJAR CON RESIDENCIA DE FAMILIAR DE CIUDADANO DE LA UE EN TRAMITE',
       'PUEDO TRABAJAR CON LA RESIDENCIA EN TRAMITE',
+      'FAMILIAR UE 2025',
+      'ARRAIGO FAMILIAR',
     ]);
     return result;
   }
@@ -226,8 +244,8 @@ export const preClassify = (profile: UserProfile): PreClassification => {
     return result;
   }
 
-  // 2) Family of EU/Spanish
-  if (hasFamily && familyNationality === 'spanish_eu') {
+  // 2) Family of EU/Spanish (solo si esta en Espana)
+  if (inSpain && hasFamily && familyNationality === 'spanish_eu') {
     result.flowCategory = 'FAMILY_OF_EU';
     const isPartner =
       relation === 'spouse' || relation === 'registered_partner' || relation === 'unregistered_partner';
@@ -257,24 +275,25 @@ export const preClassify = (profile: UserProfile): PreClassification => {
     }
 
     const familyTemplates = [
+      'FAMILIARES DE CIUDADANOS CON NACIONALIDAD ESPANOLA',
+      'ESTAR A CARGO',
       'FAMILIAR UE 2025',
       'PAREJA DE HECHO',
       'ARRAIGO FAMILIAR',
       'TRABAJAR CON RESIDENCIA DE FAMILIAR DE CIUDADANO DE LA UE EN TRAMITE',
       'RESIDENCIA INDEPENDIENTE',
       'HIJO DE ESPANOL DE ORIGEN',
-      'ESTAR A CARGO',
-      'FAMILIARES DE CIUDADANOS CON NACIONALIDAD ESPANOLA',
     ];
 
+    // Ascendientes/directos de español: priorizar estar a cargo / familiares de español
+    if (relation === 'other' || commentsPlain.includes('ascendiente') || commentsPlain.includes('a cargo')) {
+      familyTemplates.unshift('FAMILIARES DE CIUDADANOS CON NACIONALIDAD ESPANOLA', 'ESTAR A CARGO');
+    }
+
     if (isPartner) {
-      const partnerFirst =
-        relation === 'registered_partner' || relation === 'unregistered_partner';
-      const ordered = partnerFirst
-        ? ['PAREJA DE HECHO', 'FAMILIAR UE 2025']
-        : ['FAMILIAR UE 2025', 'PAREJA DE HECHO'];
       result.candidateTemplates = mapToTemplates([
-        ...ordered,
+        'FAMILIAR UE 2025',
+        'PAREJA DE HECHO',
         ...familyTemplates,
         'REAGRUPACION FAMILIAR',
       ]);
@@ -297,6 +316,7 @@ export const preClassify = (profile: UserProfile): PreClassification => {
   if (inSpain) {
     // Special cases: homologation / investors
     if (commentsPlain.includes('homolog') || commentsPlain.includes('titulo') || commentsPlain.includes('reconocimiento')) {
+      result.flowCategory = flags.isResident ? 'RESIDENT' : 'GENERIC';
       result.candidateTemplates = mapToTemplates(['HOMOLOGACION']);
       return result;
     }
@@ -306,7 +326,45 @@ export const preClassify = (profile: UserProfile): PreClassification => {
       commentsPlain.includes('bienes') ||
       (commentsPlain.includes('600') && commentsPlain.includes('000'))
     ) {
+      result.flowCategory = flags.isResident ? 'RESIDENT' : result.flowCategory;
       result.candidateTemplates = mapToTemplates(['RESIDENCIA PARA INVERSORES']);
+      return result;
+    }
+
+    // Tourist already in Spain: priorizar autorizaciones/nomada antes de otras ramas
+    if (flags.isTourist) {
+      result.flowCategory = 'TOURIST_IN_SPAIN';
+      const hasRemoteSignals =
+        jobPlain.includes('remoto') ||
+        jobPlain.includes('remote') ||
+        commentsPlain.includes('remoto') ||
+        commentsPlain.includes('teletrabajo') ||
+        commentsPlain.includes('freelance');
+      const touristTemplates = hasRemoteSignals
+        ? [
+            'NOMADA DIGITAL',
+            'AUTORIZACIONES COMO TURISTA',
+            'ESTUDIAR EN ESPANA',
+            'ENTRAR COMO TURISTA',
+            'EMPRENDER EN ESPANA',
+            'RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO',
+            'RESIDENCIA PARA INVERSORES',
+          ]
+        : [
+            'AUTORIZACIONES COMO TURISTA',
+            'ESTUDIAR EN ESPANA',
+            'ENTRAR COMO TURISTA',
+            'NOMADA DIGITAL',
+            'EMPRENDER EN ESPANA',
+            'RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO',
+            'RESIDENCIA PARA INVERSORES',
+          ];
+
+      if (isExploratory()) {
+        touristTemplates.unshift('CUENTA BREVEMENTE', 'CLIENES');
+      }
+
+      result.candidateTemplates = mapToTemplates(touristTemplates);
       return result;
     }
 
@@ -317,6 +375,21 @@ export const preClassify = (profile: UserProfile): PreClassification => {
 
       const studyTemplates: string[] = [];
       let isSpecificStudyCase = false;
+      let addedStudentFamily = false;
+
+      const mentionsStudentFamily =
+        commentsPlain.includes('conyuge') ||
+        commentsPlain.includes('espos') ||
+        commentsPlain.includes('pareja') ||
+        commentsPlain.includes('hijo') ||
+        commentsPlain.includes('hija') ||
+        commentsPlain.includes('familia');
+
+      if (mentionsStudentFamily) {
+        studyTemplates.push('MODIFICACION DE FAMILIARES DE ESTUDIANTE');
+        isSpecificStudyCase = true;
+        addedStudentFamily = true;
+      }
 
       if (commentsPlain.includes('modificar') || commentsPlain.includes('cuenta ajena') || commentsPlain.includes('trabajo')) {
         studyTemplates.push('MODIFICAR DE ESTUDIOS A CUENTA AJENA');
@@ -331,7 +404,7 @@ export const preClassify = (profile: UserProfile): PreClassification => {
         studyTemplates.push('MODIFICAR DE ESTUDIOS A CUENTA PROPIA');
         isSpecificStudyCase = true;
       }
-      if (commentsPlain.includes('despues') || commentsPlain.includes('terminad') || commentsPlain.includes('buscar empleo')) {
+      if (commentsPlain.includes('despues') || commentsPlain.includes('terminad') || commentsPlain.includes('termin') || commentsPlain.includes('buscar empleo')) {
         studyTemplates.push('DESPUES DE ESTUDIOS');
         isSpecificStudyCase = true;
       }
@@ -344,12 +417,12 @@ export const preClassify = (profile: UserProfile): PreClassification => {
         studyTemplates.push('RENOVACION DE ESTUDIOS');
         isSpecificStudyCase = true;
       }
-      if (commentsPlain.includes('familia')) {
+      if (commentsPlain.includes('familia') && !addedStudentFamily) {
         studyTemplates.push('MODIFICACION DE FAMILIARES DE ESTUDIANTE');
         isSpecificStudyCase = true;
       }
       if (commentsPlain.includes('error') || commentsPlain.includes('resolucion') || commentsPlain.includes('denega')) {
-        studyTemplates.push('ERROR EN LA RESOLUCION DE ESTUDIANTES');
+        studyTemplates.unshift('ERROR EN LA RESOLUCION DE ESTUDIANTES');
         isSpecificStudyCase = true;
       }
 
@@ -369,8 +442,8 @@ export const preClassify = (profile: UserProfile): PreClassification => {
       const asksWorkWhilePending = commentsPlain.includes('trabaj') && commentsPlain.includes('tramite');
       if (asksWorkWhilePending && hasFamily && familyNationality === 'spanish_eu') {
         result.candidateTemplates = mapToTemplates([
-          'TRABAJAR CON RESIDENCIA DE FAMILIAR DE CIUDADANO DE LA UE EN TRAMITE',
           'PUEDO TRABAJAR CON LA RESIDENCIA EN TRAMITE',
+          'TRABAJAR CON RESIDENCIA DE FAMILIAR DE CIUDADANO DE LA UE EN TRAMITE',
           'FAMILIAR UE 2025',
           'ARRAIGO FAMILIAR',
         ]);
@@ -415,6 +488,27 @@ export const preClassify = (profile: UserProfile): PreClassification => {
 
       const studyTemplates: string[] = [];
       let isSpecificStudyCase = false;
+      let addedStudentFamily = false;
+
+      if (commentsPlain.includes('familiar de estudiante') || commentsPlain.includes('conyuge de estudiante') || commentsPlain.includes('familia de estudiante')) {
+        studyTemplates.unshift('MODIFICACION DE FAMILIARES DE ESTUDIANTE');
+        isSpecificStudyCase = true;
+        addedStudentFamily = true;
+      }
+
+      const mentionsStudentFamily =
+        commentsPlain.includes('conyuge') ||
+        commentsPlain.includes('espos') ||
+        commentsPlain.includes('pareja') ||
+        commentsPlain.includes('hijo') ||
+        commentsPlain.includes('hija') ||
+        commentsPlain.includes('familia');
+
+      if (!addedStudentFamily && mentionsStudentFamily) {
+        studyTemplates.unshift('MODIFICACION DE FAMILIARES DE ESTUDIANTE');
+        isSpecificStudyCase = true;
+        addedStudentFamily = true;
+      }
 
       if (commentsPlain.includes('modificar') || commentsPlain.includes('cuenta ajena') || commentsPlain.includes('trabajo')) {
         studyTemplates.push('MODIFICAR DE ESTUDIOS A CUENTA AJENA');
@@ -429,7 +523,7 @@ export const preClassify = (profile: UserProfile): PreClassification => {
         studyTemplates.push('MODIFICAR DE ESTUDIOS A CUENTA PROPIA');
         isSpecificStudyCase = true;
       }
-      if (commentsPlain.includes('despues') || commentsPlain.includes('terminad') || commentsPlain.includes('buscar empleo')) {
+      if (commentsPlain.includes('despues') || commentsPlain.includes('terminad') || commentsPlain.includes('termin') || commentsPlain.includes('buscar empleo')) {
         studyTemplates.push('DESPUES DE ESTUDIOS');
         isSpecificStudyCase = true;
       }
@@ -442,15 +536,12 @@ export const preClassify = (profile: UserProfile): PreClassification => {
         studyTemplates.push('RENOVACION DE ESTUDIOS');
         isSpecificStudyCase = true;
       }
-      if (commentsPlain.includes('familiar de estudiante') || commentsPlain.includes('conyuge de estudiante') || commentsPlain.includes('familia de estudiante')) {
-        studyTemplates.unshift('MODIFICACION DE FAMILIARES DE ESTUDIANTE');
-        isSpecificStudyCase = true;
-      } else if (commentsPlain.includes('familia')) {
+      if (commentsPlain.includes('familia') && !addedStudentFamily) {
         studyTemplates.push('MODIFICACION DE FAMILIARES DE ESTUDIANTE');
         isSpecificStudyCase = true;
       }
       if (commentsPlain.includes('error') || commentsPlain.includes('resolucion') || commentsPlain.includes('denega')) {
-        studyTemplates.push('ERROR EN LA RESOLUCION DE ESTUDIANTES');
+        studyTemplates.unshift('ERROR EN LA RESOLUCION DE ESTUDIANTES');
         isSpecificStudyCase = true;
       }
 
@@ -470,8 +561,8 @@ export const preClassify = (profile: UserProfile): PreClassification => {
       const asksWorkWhilePending = commentsPlain.includes('trabaj') && commentsPlain.includes('tramite');
       if (asksWorkWhilePending && hasFamily && familyNationality === 'spanish_eu') {
         result.candidateTemplates = mapToTemplates([
-          'TRABAJAR CON RESIDENCIA DE FAMILIAR DE CIUDADANO DE LA UE EN TRAMITE',
           'PUEDO TRABAJAR CON LA RESIDENCIA EN TRAMITE',
+          'TRABAJAR CON RESIDENCIA DE FAMILIAR DE CIUDADANO DE LA UE EN TRAMITE',
           'FAMILIAR UE 2025',
           'ARRAIGO FAMILIAR',
         ]);
@@ -513,9 +604,8 @@ export const preClassify = (profile: UserProfile): PreClassification => {
     if (flags.isIrregular || goal === 'regularize') {
       result.flowCategory = 'ARRAIGOS';
       const base: string[] = [
-        'ARRAIGO SOCIAL',
-        'ARRAIGO SOCIOLABORAL',
-        'ARRAIGO SOCIOFORMATIVO',
+        'ARRAIGO SOCIAL',          // Ahora es base, porque pide 2 años
+        'ARRAIGO SOCIOFORMATIVO',  // Ahora es base, porque pide 2 años
         'ARRAIGO FAMILIAR',
         'ARRAIGO DE SEGUNDA OPORTUNIDAD',
         'FORMAS DE REGULARIZARSE',
@@ -525,58 +615,79 @@ export const preClassify = (profile: UserProfile): PreClassification => {
         base.unshift('RECURSO CONTENCIOSO');
       }
 
-      const extras: string[] = [];
-      if (has3Years(profile.timeInSpain)) {
-        extras.push('ARRAIGO SOCIAL', 'ARRAIGO SOCIOLABORAL', 'ARRAIGO SOCIOFORMATIVO');
-      }
-      if (hasBetween2And3(profile.timeInSpain)) {
-        extras.push('ARRAIGO SOCIOLABORAL');
+      // LÓGICA DE TIEMPO ACTUALIZADA (2 AÑOS)
+      // Usamos tu función auxiliar timeToYears que ya existe en el archivo
+      const years = timeToYears(profile.timeInSpain);
+
+      // Si tiene MENOS de 2 años, quitamos los Arraigos que piden tiempo
+      // (Es más seguro quitar lo que no sirve que intentar adivinar lo que sí)
+      let candidates = [...base];
+      
+      if (years < 1.9) { // Margen de error pequeño
+         // Si lleva menos de 2 años, quitamos Social y Sociolaboral
+         candidates = candidates.filter(t => 
+             t !== 'ARRAIGO SOCIAL' && 
+             t !== 'ARRAIGO SOCIOLABORAL'
+         );
+         // Dejamos Formativo porque a veces se permite pre-inscribirse antes
       }
 
+            // Logica laboral existente (mantenla)
       const hasLaborEvidence =
         jobPlain.includes('denuncia') ||
         jobPlain.includes('inspecci') ||
         jobPlain.includes('sentencia') ||
         jobPlain.includes('nomina') ||
         commentsPlain.includes('laboral');
-      const hasTrainingPath =
-        commentsPlain.includes('formacion') ||
-        commentsPlain.includes('curso') ||
-        commentsPlain.includes('600h') ||
-        commentsPlain.includes('600 h') ||
-        commentsPlain.includes('fp') ||
-        commentsPlain.includes('socioformativo') ||
-        commentsPlain.includes('preinscripcion') ||
-        commentsPlain.includes('estudiar') ||
-        commentsPlain.includes('estudios') ||
-        commentsPlain.includes('master') ||
-        commentsPlain.includes('grado') ||
-        commentsPlain.includes('aprender') ||
-        jobPlain.includes('curso');
 
       if (hasLaborEvidence) {
-        base.unshift('ARRAIGO SOCIOLABORAL');
-      }
-      if (hasTrainingPath || goal === 'study') {
-        base.unshift('ARRAIGO SOCIOFORMATIVO');
+        candidates.unshift('ARRAIGO SOCIOLABORAL');
       }
 
-      result.candidateTemplates = mapToTemplates([...base, ...extras]);
+      // Ruta formativa clara: prioriza socioformativo y evita social
+      if (hasTrainingPath || goal === 'study') {
+        result.candidateTemplates = mapToTemplates(['ARRAIGO SOCIOFORMATIVO', 'FORMAS DE REGULARIZARSE']);
+        return result;
+      }
+
+      // Segunda oportunidad: perdida de residencia/tarjeta previa
+      if (commentsPlain.includes('perdi') && (commentsPlain.includes('residencia') || commentsPlain.includes('tarjeta'))) {
+        result.candidateTemplates = mapToTemplates(['ARRAIGO DE SEGUNDA OPORTUNIDAD', 'FORMAS DE REGULARIZARSE']);
+        return result;
+      }
+
+      result.candidateTemplates = mapToTemplates(candidates);
       return result;
     }
 
     // Tourist in Spain
     if (flags.isTourist) {
       result.flowCategory = 'TOURIST_IN_SPAIN';
-      const touristTemplates = [
-        'AUTORIZACIONES COMO TURISTA',
-        'ESTUDIAR EN ESPANA',
-        'ENTRAR COMO TURISTA',
-        'NOMADA DIGITAL',
-        'EMPRENDER EN ESPANA',
-        'RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO',
-        'RESIDENCIA PARA INVERSORES',
-      ];
+      const hasRemoteSignals =
+        jobPlain.includes('remoto') ||
+        jobPlain.includes('remote') ||
+        commentsPlain.includes('remoto') ||
+        commentsPlain.includes('teletrabajo') ||
+        commentsPlain.includes('freelance');
+      const touristTemplates = hasRemoteSignals
+        ? [
+            'NOMADA DIGITAL',
+            'AUTORIZACIONES COMO TURISTA',
+            'ESTUDIAR EN ESPANA',
+            'ENTRAR COMO TURISTA',
+            'EMPRENDER EN ESPANA',
+            'RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO',
+            'RESIDENCIA PARA INVERSORES',
+          ]
+        : [
+            'AUTORIZACIONES COMO TURISTA',
+            'ESTUDIAR EN ESPANA',
+            'ENTRAR COMO TURISTA',
+            'NOMADA DIGITAL',
+            'EMPRENDER EN ESPANA',
+            'RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO',
+            'RESIDENCIA PARA INVERSORES',
+          ];
 
       if (isExploratory()) {
         touristTemplates.unshift('CUENTA BREVEMENTE', 'CLIENES');
@@ -621,38 +732,54 @@ export const preClassify = (profile: UserProfile): PreClassification => {
       commentsPlain.includes('remoto') ||
       commentsPlain.includes('teletrabajo') ||
       commentsPlain.includes('freelance');
-    const isInvestor =
-      jobPlain.includes('invers') ||
-      commentsPlain.includes('invers') ||
-      commentsPlain.includes('600k') ||
-      commentsPlain.includes('500000') ||
-      commentsPlain.includes('500.000') ||
-      commentsPlain.includes('2m') ||
-      commentsPlain.includes('650000') ||
-      commentsPlain.includes('650.000');
+    const mentionsInvestorVisa =
+      jobPlain.includes('inversor') ||
+      commentsPlain.includes('inversor') ||
+      commentsPlain.includes('visa de inversor') ||
+      commentsPlain.includes('golden visa') ||
+      commentsPlain.includes('golden');
+    const highInvestmentRegex = /\b([5-9]\d{2}k|[5-9]\d{5}|[5-9]\d{2}[.,]\d{3}|[1-2](?:[.,]\d+)?m)\b/;
+    const hasHighInvestmentAmount =
+      highInvestmentRegex.test(commentsPlain) ||
+      highInvestmentRegex.test(jobPlain) ||
+      commentsPlain.includes('1.000.000') ||
+      jobPlain.includes('1.000.000') ||
+      commentsPlain.includes('1,000,000') ||
+      jobPlain.includes('1,000,000');
+    const isInvestor = mentionsInvestorVisa || hasHighInvestmentAmount;
+    const noOffer = commentsPlain.includes('sin oferta') || jobPlain.includes('sin oferta');
     const isHq =
-      jobPlain.includes('oferta') ||
-      jobPlain.includes('director') ||
-      jobPlain.includes('jefe') ||
-      jobPlain.includes('cto') ||
-      commentsPlain.includes('multinacional') ||
-      commentsPlain.includes('cualific') ||
-      commentsPlain.includes('investigador') ||
-      commentsPlain.includes('salario');
+      !noOffer &&
+      (jobPlain.includes('oferta') ||
+        jobPlain.includes('director') ||
+        jobPlain.includes('jefe') ||
+        jobPlain.includes('cto') ||
+        commentsPlain.includes('multinacional') ||
+        commentsPlain.includes('cualific') ||
+        commentsPlain.includes('investigador') ||
+        commentsPlain.includes('salario'));
     const isEntrepreneur =
       jobPlain.includes('emprend') ||
       commentsPlain.includes('emprend') ||
       commentsPlain.includes('startup') ||
       commentsPlain.includes('negocio') ||
       commentsPlain.includes('plan de negocio');
+    const mentionsAscendant =
+      commentsPlain.includes('ascendiente') ||
+      commentsPlain.includes('a cargo') ||
+      commentsPlain.includes('madre') ||
+      commentsPlain.includes('padre') ||
+      commentsPlain.includes('abuela') ||
+      commentsPlain.includes('abuelo') ||
+      commentsPlain.includes('suegr');
 
     const wantsWork = goalRegularize || isRemote || isInvestor || isHq || isEntrepreneur;
 
     if (wantsWork) {
+      if (isEntrepreneur) baseTemplates.push('EMPRENDER EN ESPANA');
       if (isInvestor) baseTemplates.push('RESIDENCIA PARA INVERSORES');
       if (isHq) baseTemplates.push('RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO');
       if (isRemote) baseTemplates.push('NOMADA DIGITAL');
-      if (isEntrepreneur) baseTemplates.push('EMPRENDER EN ESPANA');
       baseTemplates.push('EMIGRAR SIN PASAPORTE EUROPEO', 'ENTRAR COMO TURISTA');
     }
 
@@ -661,11 +788,10 @@ export const preClassify = (profile: UserProfile): PreClassification => {
     }
 
     if (goalFamily || hasFamily) {
-      baseTemplates.unshift(
-        'REAGRUPACION FAMILIAR',
-        'FAMILIARES DE CIUDADANOS CON NACIONALIDAD ESPANOLA',
-        'ESTAR A CARGO',
-      );
+      const familyOrder = mentionsAscendant
+        ? ['ESTAR A CARGO', 'FAMILIARES DE CIUDADANOS CON NACIONALIDAD ESPANOLA', 'REAGRUPACION FAMILIAR']
+        : ['REAGRUPACION FAMILIAR', 'FAMILIARES DE CIUDADANOS CON NACIONALIDAD ESPANOLA', 'ESTAR A CARGO'];
+      baseTemplates.unshift(...familyOrder);
     }
 
     if (goalNationality) {
