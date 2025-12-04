@@ -346,23 +346,23 @@ export const preClassify = (profile: UserProfile): PreClassification => {
         commentsPlain.includes('freelance');
       const touristTemplates = hasRemoteSignals
         ? [
-            'NOMADA DIGITAL',
-            'AUTORIZACIONES COMO TURISTA',
-            'ESTUDIAR EN ESPAÑA',
-            'ENTRAR COMO TURISTA',
-            'EMPRENDER EN ESPANA',
-            'RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO',
-            'RESIDENCIA PARA INVERSORES',
-          ]
+          'NOMADA DIGITAL',
+          'AUTORIZACIONES COMO TURISTA',
+          'ESTUDIAR EN ESPAÑA',
+          'ENTRAR COMO TURISTA',
+          'EMPRENDER EN ESPANA',
+          'RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO',
+          'RESIDENCIA PARA INVERSORES',
+        ]
         : [
-            'AUTORIZACIONES COMO TURISTA',
-            'ESTUDIAR EN ESPANA',
-            'ENTRAR COMO TURISTA',
-            'NOMADA DIGITAL',
-            'EMPRENDER EN ESPANA',
-            'RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO',
-            'RESIDENCIA PARA INVERSORES',
-          ];
+          'AUTORIZACIONES COMO TURISTA',
+          'ESTUDIAR EN ESPANA',
+          'ENTRAR COMO TURISTA',
+          'NOMADA DIGITAL',
+          'EMPRENDER EN ESPANA',
+          'RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO',
+          'RESIDENCIA PARA INVERSORES',
+        ];
 
       if (isExploratory()) {
         touristTemplates.unshift('CUENTA BREVEMENTE', 'CLIENES');
@@ -625,14 +625,15 @@ export const preClassify = (profile: UserProfile): PreClassification => {
 
       // FILTRO ESTRICTO DE AÑOS
       if (years < 1.9) {
-         // Menos de 2 años: No puede hacer Arraigo Social ni Laboral
-         candidates = candidates.filter(t => t !== 'ARRAIGO SOCIAL' && t !== 'ARRAIGO SOCIOLABORAL');
-      } else if (years < 2.9) {
-         // Entre 2 y 3 años (Caso de tu usuario: 2.16):
-         // Cumple para Formativo y Laboral, pero NO para Social (pide 3).
-         // Quitamos "ARRAIGO SOCIAL" para que la IA no se confunda.
-         candidates = candidates.filter(t => t !== 'ARRAIGO SOCIAL');
+        // Si < 2 años, quitamos Social, Laboral y Formativo
+        candidates = candidates.filter(t =>
+          t !== 'ARRAIGO SOCIAL' &&
+          t !== 'ARRAIGO SOCIOLABORAL' &&
+          t !== 'ARRAIGO SOCIOFORMATIVO'
+        );
       }
+
+      const hasJobOffer = jobPlain.includes('oferta'); // Detecta el nuevo valor
 
       // Logica laboral
       const hasLaborEvidence =
@@ -640,17 +641,22 @@ export const preClassify = (profile: UserProfile): PreClassification => {
         jobPlain.includes('inspecci') ||
         jobPlain.includes('sentencia') ||
         jobPlain.includes('nomina') ||
-        commentsPlain.includes('laboral'); // OJO: 'informal' no suele activar esto en tu código actual
+        // Si seleccionó "informal", a veces queremos sugerir sociolaboral, 
+        // pero "oferta" es más fuerte para Arraigo Social.
+        (jobPlain.includes('informal') && !hasJobOffer);
 
-      if (hasLaborEvidence) {
+      if (hasJobOffer && years >= 1.9) {
+        // GOLAZO: Si tiene oferta y >2 años, ARRAIGO SOCIAL es el rey.
+        // Lo ponemos el primero y limpiamos el formativo para que no moleste.
+        candidates = candidates.filter(t => t !== 'ARRAIGO SOCIOFORMATIVO');
+        candidates.unshift('ARRAIGO SOCIAL');
+      }
+      else if (hasLaborEvidence) {
         candidates.unshift('ARRAIGO SOCIOLABORAL');
       }
-
-      // Priorizar formativo si no hay pruebas laborales fuertes
-      if (!hasLaborEvidence && years >= 1.9) {
-          // Ponemos Formativo al principio porque es la vía más segura para 2 años sin denuncia
-          candidates = candidates.filter(t => t !== 'ARRAIGO SOCIOFORMATIVO'); // Lo quitamos para volver a ponerlo al inicio
-          candidates.unshift('ARRAIGO SOCIOFORMATIVO');
+      else if (years >= 1.9) {
+        // Si no tiene oferta ni pruebas laborales, lo mejor es estudiar
+        candidates.unshift('ARRAIGO SOCIOFORMATIVO');
       }
 
       result.candidateTemplates = mapToTemplates(candidates);
@@ -668,23 +674,23 @@ export const preClassify = (profile: UserProfile): PreClassification => {
         commentsPlain.includes('freelance');
       const touristTemplates = hasRemoteSignals
         ? [
-            'NOMADA DIGITAL',
-            'AUTORIZACIONES COMO TURISTA',
-            'ESTUDIAR EN ESPANA',
-            'ENTRAR COMO TURISTA',
-            'EMPRENDER EN ESPANA',
-            'RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO',
-            'RESIDENCIA PARA INVERSORES',
-          ]
+          'NOMADA DIGITAL',
+          'AUTORIZACIONES COMO TURISTA',
+          'ESTUDIAR EN ESPANA',
+          'ENTRAR COMO TURISTA',
+          'EMPRENDER EN ESPANA',
+          'RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO',
+          'RESIDENCIA PARA INVERSORES',
+        ]
         : [
-            'AUTORIZACIONES COMO TURISTA',
-            'ESTUDIAR EN ESPANA',
-            'ENTRAR COMO TURISTA',
-            'NOMADA DIGITAL',
-            'EMPRENDER EN ESPANA',
-            'RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO',
-            'RESIDENCIA PARA INVERSORES',
-          ];
+          'AUTORIZACIONES COMO TURISTA',
+          'ESTUDIAR EN ESPANA',
+          'ENTRAR COMO TURISTA',
+          'NOMADA DIGITAL',
+          'EMPRENDER EN ESPANA',
+          'RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO',
+          'RESIDENCIA PARA INVERSORES',
+        ];
 
       if (isExploratory()) {
         touristTemplates.unshift('CUENTA BREVEMENTE', 'CLIENES');

@@ -1234,12 +1234,12 @@ export const ImmigrationForm: React.FC<ImmigrationFormProps> = ({ onSubmit, isLo
             value={formData.jobSituation}
             onChange={(e) => updateField('jobSituation', e.target.value)}
             options={[
-              { label: 'Trabajo por cuenta ajena (contrato)', value: 'empleado' },
-              { label: 'Trabajo por cuenta propia (autónomo)', value: 'autonomo' },
-              { label: 'Trabajo sin contrato / economía informal', value: 'informal' },
-              { label: 'Estoy desempleado/a', value: 'desempleado' },
-              { label: 'Soy estudiante', value: 'estudiante' },
-              { label: 'Otra situación', value: 'otro' },
+              { value: "desempleado", label: "Desempleado / No trabajo" },
+              { value: "oferta", label: "Tengo una oferta de trabajo" },
+              { value: "informal", label: "Trabajo irregular / Sin contrato" },
+              { value: "empleado", label: "Empleado con contrato" },
+              { value: "autonomo", label: "Autónomo / Cuenta propia" },
+              { value: "estudiante", label: "Estudiante (con permiso)" },
             ]}
           />
           <button

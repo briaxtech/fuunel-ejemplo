@@ -229,6 +229,10 @@ export const analyzeImmigrationProfile = async (
 
     3. PRIORIDAD LABORAL:
        - Si lleva > 2 años Y menciona trabajo/jefe/despido/negro/irregular -> EL TRAMITE ES "ARRAIGO SOCIOLABORAL". Priorízalo sobre cualquier otro.
+       
+    4. REGLA DE LA OFERTA DE TRABAJO:
+       - Si jobSituation es "oferta" o el usuario dice "tengo oferta" -> La prioridad #1 es "ARRAIGO SOCIAL" (si cumple >2 años).
+       - Diferéncialo de "Trabajo irregular" (que apunta a Sociolaboral).
 
     TU TAREA:
     Analiza el perfil. Si es un tramite legal claro y cumple requisitos, elige el template.
