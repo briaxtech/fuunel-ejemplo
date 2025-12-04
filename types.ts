@@ -34,6 +34,12 @@ export enum TimeInSpain {
   MORE_THAN_THREE_YEARS = "MORE_THAN_THREE_YEARS",
 }
 
+export enum NextStepAction {
+  SCHEDULE_CONSULTATION = "SCHEDULE_CONSULTATION",
+  GATHER_DOCUMENTS = "GATHER_DOCUMENTS",
+  MANUAL_REVIEW = "MANUAL_REVIEW",
+}
+
 // Datos de contacto
 export interface ContactInfo {
   email: string;
@@ -109,10 +115,15 @@ export interface Recommendation {
 }
 
 export interface AIAnalysisResult {
+  legalAnalysis: {
+    timeCheck: string;
+    criminalRecordCheck: boolean;
+    intentCheck: string;
+  };
   summary: string;
   recommendations: Recommendation[];
   criticalAdvice: string;
   missingInfoWarning?: string;
-  nextStepAction: "SCHEDULE_CONSULTATION" | "GATHER_DOCUMENTS";
+  nextStepAction: NextStepAction;
   actionReasoning: string;
 }

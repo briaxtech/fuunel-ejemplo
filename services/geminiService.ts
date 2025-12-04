@@ -1,5 +1,5 @@
 ﻿import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
-import { UserProfile, AIAnalysisResult } from "../types";
+import { UserProfile, AIAnalysisResult, NextStepAction } from "../types";
 import { TEMPLATE_SUMMARY_MAP, TEMPLATE_KEYS } from "./templates";
 import { preClassify } from "./preClassify";
 
@@ -53,6 +53,13 @@ const replaceDecimalYears = (text: string | undefined): string | undefined => {
   });
 };
 
+const coerceNextStep = (action?: string): NextStepAction => {
+  const normalized = (action || "").toUpperCase();
+  if (normalized === NextStepAction.GATHER_DOCUMENTS) return NextStepAction.GATHER_DOCUMENTS;
+  if (normalized === NextStepAction.MANUAL_REVIEW) return NextStepAction.MANUAL_REVIEW;
+  return NextStepAction.SCHEDULE_CONSULTATION;
+};
+
 // 1. LISTA NEGRA: Templates administrativos que la IA TIENE PROHIBIDO elegir.
 // Si el usuario quiere esto, la IA derivarÃ¡ a 'REVISION_MANUAL'.
 const EXCLUDED_ADMIN_TEMPLATES = [
@@ -81,7 +88,7 @@ const TEMPLATE_RULES: Record<string, string> = {
   "ARRAIGO SOCIOFORMATIVO":
     "REQUIERE: >=2 anos permanencia + Compromiso formacion (600h/FP) + Sin penales.",
   "ARRAIGO SOCIOLABORAL":
-    "REQUIERE: >=2 anos permanencia + Relacion laboral demostrable (denuncia/sentencia) + Sin penales.",
+    "PRIORIDAD ALTA si: >=2 años permanencia + Relación laboral (irregular o no). NO sugerir Actas ni Arraigo Social si cumple esto.",
   "ARRAIGO FAMILIAR":
     "REQUIERE: Hijo de espanol de origen O Padre/Madre de menor espanol. (Diferente a Familiar UE).",
   "ARRAIGO DE SEGUNDA OPORTUNIDAD":
@@ -209,6 +216,19 @@ export const analyzeImmigrationProfile = async (
        - Si dudas o la informacion es contradictoria, usa "${MANUAL_REVIEW_KEY}".
     4. FORMATO DE TIEMPO EN ESPAÑA:
        - NUNCA uses decimales (ej: "2.15 años"). Usa rangos: "Menos de 6 meses", "Entre 1 y 2 años", "Entre 2 y 3 años", "Más de 3 años".
+    
+    INSTRUCCIONES CRITICAS (JERARQUIA DE DECISION):
+    1. REGLA DE NACIONALIDAD:
+       - Ser de Argentina/Latinoamerica NO implica "BUSQUEDA DE ACTAS" ni "LMD" salvo que el usuario pida explícitamente "ciudadanía", "abuelos" o "pasaporte".
+       - Si busca regularizarse por trabajo/arraigo, IGNORA la nacionalidad para elegir el template.
+
+    2. REGLA DE TIEMPO (CRUCIAL):
+       - Tiempo < 2 años: Arraigo Formación (si quiere estudiar) o Formas de Regularizarse.
+       - Tiempo 2 a 3 años (ej: 2.17): SOLO Arraigo Sociolaboral (si trabajó) o Socioformativo. JAMAS sugieras Arraigo Social (requiere 3).
+       - Tiempo > 3 años: Arraigo Social es posible.
+
+    3. PRIORIDAD LABORAL:
+       - Si lleva > 2 años Y menciona trabajo/jefe/despido/negro/irregular -> EL TRAMITE ES "ARRAIGO SOCIOLABORAL". Priorízalo sobre cualquier otro.
 
     TU TAREA:
     Analiza el perfil. Si es un tramite legal claro y cumple requisitos, elige el template.
@@ -243,7 +263,11 @@ export const analyzeImmigrationProfile = async (
       estimatedTime: "N/A",
     } as any];
 
-    const nextStep = result.nextStepAction === "MANUAL_REVIEW" ? "GATHER_DOCUMENTS" : result.nextStepAction;
+    const rawNext = coerceNextStep(result.nextStepAction as any);
+    const nextStep =
+      rawNext === NextStepAction.MANUAL_REVIEW
+        ? NextStepAction.GATHER_DOCUMENTS
+        : rawNext;
 
     return { ...result, recommendations: ensured, nextStepAction: nextStep };
   };
@@ -267,7 +291,7 @@ export const analyzeImmigrationProfile = async (
       if (parsed.recommendations && parsed.recommendations[0]) {
         parsed.recommendations[0].templateKey = MANUAL_REVIEW_KEY;
       }
-      parsed.nextStepAction = "MANUAL_REVIEW";
+      parsed.nextStepAction = NextStepAction.MANUAL_REVIEW;
       return parsed;
     }
 
@@ -276,8 +300,8 @@ export const analyzeImmigrationProfile = async (
       const fixedTime = replaceDecimalYears(`Tiempo en España: ${timeDisplay}`) || `Tiempo en España: ${timeDisplay}`;
       normalized.legalAnalysis.timeCheck = fixedTime;
     }
-    normalized.summary = replaceDecimalYears(normalized.summary);
-    normalized.criticalAdvice = replaceDecimalYears(normalized.criticalAdvice);
+    normalized.summary = replaceDecimalYears(normalized.summary) || normalized.summary;
+    normalized.criticalAdvice = replaceDecimalYears(normalized.criticalAdvice) || normalized.criticalAdvice;
     return normalized;
 
   } catch (error) {

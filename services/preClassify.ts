@@ -344,7 +344,7 @@ export const preClassify = (profile: UserProfile): PreClassification => {
         ? [
             'NOMADA DIGITAL',
             'AUTORIZACIONES COMO TURISTA',
-            'ESTUDIAR EN ESPANA',
+            'ESTUDIAR EN ESPAÑA',
             'ENTRAR COMO TURISTA',
             'EMPRENDER EN ESPANA',
             'RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO',
@@ -623,13 +623,18 @@ export const preClassify = (profile: UserProfile): PreClassification => {
       // (Es más seguro quitar lo que no sirve que intentar adivinar lo que sí)
       let candidates = [...base];
       
-      if (years < 1.9) { // Margen de error pequeño
-         // Si lleva menos de 2 años, quitamos Social y Sociolaboral
+      // LÓGICA DE TIEMPO ESTRICTA:
+      if (years < 1.9) {
+         // Menos de 2 años: No puede hacer ni Social ni Laboral
          candidates = candidates.filter(t => 
              t !== 'ARRAIGO SOCIAL' && 
              t !== 'ARRAIGO SOCIOLABORAL'
          );
-         // Dejamos Formativo porque a veces se permite pre-inscribirse antes
+      } else if (years < 2.9) {
+         // Entre 2 y 3 años (Tu caso de 2.17): 
+         // PUEDE hacer Laboral, pero NO puede hacer Social (pide 3).
+         // Quitamos explícitamente Arraigo Social para no confundir a la IA.
+         candidates = candidates.filter(t => t !== 'ARRAIGO SOCIAL');
       }
 
             // Logica laboral existente (mantenla)
@@ -641,6 +646,8 @@ export const preClassify = (profile: UserProfile): PreClassification => {
         commentsPlain.includes('laboral');
 
       if (hasLaborEvidence) {
+        // Si hay pruebas laborales, ponemos SOCIOLABORAL de primero y eliminamos formacion/social para evitar ruido
+        candidates = candidates.filter(t => t !== 'ARRAIGO SOCIOFORMATIVO'); // Opcional: limpiar opciones débiles
         candidates.unshift('ARRAIGO SOCIOLABORAL');
       }
 
@@ -776,7 +783,7 @@ export const preClassify = (profile: UserProfile): PreClassification => {
     const wantsWork = goalRegularize || isRemote || isInvestor || isHq || isEntrepreneur;
 
     if (wantsWork) {
-      if (isEntrepreneur) baseTemplates.push('EMPRENDER EN ESPANA');
+      if (isEntrepreneur) baseTemplates.push('EMPRENDER EN ESPAÑA');
       if (isInvestor) baseTemplates.push('RESIDENCIA PARA INVERSORES');
       if (isHq) baseTemplates.push('RESIDENCIA PARA PROFESIONAL ALTAMENTE CUALIFICADO');
       if (isRemote) baseTemplates.push('NOMADA DIGITAL');
@@ -784,7 +791,7 @@ export const preClassify = (profile: UserProfile): PreClassification => {
     }
 
     if (goalStudy) {
-      baseTemplates.unshift('ESTUDIAR EN ESPANA');
+      baseTemplates.unshift('ESTUDIAR EN ESPAÑA');
     }
 
     if (goalFamily || hasFamily) {
